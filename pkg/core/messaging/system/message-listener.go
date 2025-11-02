@@ -28,9 +28,9 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/bit-fever/core/msg"
-	"github.com/bit-fever/data-collector/pkg/core/jobmanager"
-	"github.com/bit-fever/data-collector/pkg/db"
+	"github.com/tradalia/core/msg"
+	"github.com/tradalia/data-collector/pkg/core/jobmanager"
+	"github.com/tradalia/data-collector/pkg/db"
 	"gorm.io/gorm"
 )
 

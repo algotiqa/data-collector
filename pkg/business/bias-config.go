@@ -26,8 +26,8 @@ package business
 
 import (
 	"errors"
-	"github.com/bit-fever/core/auth"
-	"github.com/bit-fever/data-collector/pkg/db"
+	"github.com/tradalia/core/auth"
+	"github.com/tradalia/data-collector/pkg/db"
 	"gorm.io/gorm"
 )
 

@@ -27,8 +27,8 @@ package jobmanager
 import (
 	"time"
 
-	"github.com/bit-fever/core/datatype"
-	"github.com/bit-fever/data-collector/pkg/db"
+	"github.com/tradalia/core/datatype"
+	"github.com/tradalia/data-collector/pkg/db"
 )
 
 //=============================================================================

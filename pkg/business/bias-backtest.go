@@ -28,10 +28,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/bit-fever/core/auth"
-	"github.com/bit-fever/data-collector/pkg/db"
-	"github.com/bit-fever/data-collector/pkg/ds"
-	"github.com/bit-fever/sick-engine/session"
+	"github.com/tradalia/core/auth"
+	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/tradalia/data-collector/pkg/ds"
+	"github.com/tradalia/sick-engine/session"
 	"gorm.io/gorm"
 )
 

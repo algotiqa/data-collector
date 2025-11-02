@@ -32,9 +32,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/bit-fever/core"
-	"github.com/bit-fever/core/req"
-	"github.com/bit-fever/data-collector/pkg/app"
+	"github.com/tradalia/core"
+	"github.com/tradalia/core/req"
+	"github.com/tradalia/data-collector/pkg/app"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"

@@ -25,8 +25,8 @@ THE SOFTWARE.
 package service
 
 import (
-	"github.com/bit-fever/core/auth"
-	"github.com/bit-fever/data-collector/pkg/core/messaging/file"
+	"github.com/tradalia/core/auth"
+	"github.com/tradalia/data-collector/pkg/core/messaging/file"
 )
 
 //=============================================================================

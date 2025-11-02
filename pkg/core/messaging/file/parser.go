@@ -27,7 +27,7 @@ package file
 import (
 	"errors"
 
-	"github.com/bit-fever/core/datatype"
+	"github.com/tradalia/core/datatype"
 )
 
 //=============================================================================

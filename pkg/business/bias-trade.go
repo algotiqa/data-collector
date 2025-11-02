@@ -25,9 +25,9 @@ THE SOFTWARE.
 package business
 
 import (
-	"github.com/bit-fever/data-collector/pkg/core"
-	"github.com/bit-fever/data-collector/pkg/db"
-	"github.com/bit-fever/data-collector/pkg/ds"
+	"github.com/tradalia/data-collector/pkg/core"
+	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/tradalia/data-collector/pkg/ds"
 	"strconv"
 	"time"
 )

@@ -30,9 +30,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bit-fever/core/msg"
-	"github.com/bit-fever/data-collector/pkg/db"
-	"github.com/bit-fever/data-collector/pkg/ds"
+	"github.com/tradalia/core/msg"
+	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/tradalia/data-collector/pkg/ds"
 	"gorm.io/gorm"
 )
 

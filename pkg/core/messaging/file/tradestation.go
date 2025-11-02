@@ -30,7 +30,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bit-fever/data-collector/pkg/ds"
+	"github.com/tradalia/data-collector/pkg/ds"
 )
 
 //=============================================================================

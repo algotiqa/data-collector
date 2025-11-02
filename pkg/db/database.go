@@ -25,7 +25,7 @@ THE SOFTWARE.
 package db
 
 import (
-	"github.com/bit-fever/core"
+	"github.com/tradalia/core"
 	"gorm.io/driver/mysql"
 	"log/slog"
 	"time"

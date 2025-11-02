@@ -31,12 +31,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bit-fever/core/auth"
-	"github.com/bit-fever/core/req"
-	"github.com/bit-fever/data-collector/pkg/core/jobmanager"
-	"github.com/bit-fever/data-collector/pkg/core/process/invloader"
-	"github.com/bit-fever/data-collector/pkg/db"
-	"github.com/bit-fever/data-collector/pkg/ds"
+	"github.com/tradalia/core/auth"
+	"github.com/tradalia/core/req"
+	"github.com/tradalia/data-collector/pkg/core/jobmanager"
+	"github.com/tradalia/data-collector/pkg/core/process/invloader"
+	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/tradalia/data-collector/pkg/ds"
 	"gorm.io/gorm"
 )
 

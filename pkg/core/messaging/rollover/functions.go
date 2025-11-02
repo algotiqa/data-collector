@@ -27,7 +27,7 @@ package rollover
 import (
 	"time"
 
-	"github.com/bit-fever/data-collector/pkg/db"
+	"github.com/tradalia/data-collector/pkg/db"
 )
 
 //=============================================================================

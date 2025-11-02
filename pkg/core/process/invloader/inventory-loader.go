@@ -30,13 +30,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bit-fever/core/datatype"
-	"github.com/bit-fever/core/msg"
-	"github.com/bit-fever/data-collector/pkg/app"
-	"github.com/bit-fever/data-collector/pkg/core/jobmanager"
-	"github.com/bit-fever/data-collector/pkg/core/messaging/rollover"
-	"github.com/bit-fever/data-collector/pkg/db"
-	"github.com/bit-fever/data-collector/pkg/platform"
+	"github.com/tradalia/core/datatype"
+	"github.com/tradalia/core/msg"
+	"github.com/tradalia/data-collector/pkg/app"
+	"github.com/tradalia/data-collector/pkg/core/jobmanager"
+	"github.com/tradalia/data-collector/pkg/core/messaging/rollover"
+	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/tradalia/data-collector/pkg/platform"
 	"gorm.io/gorm"
 )
 

@@ -28,12 +28,12 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/bit-fever/core/msg"
-	"github.com/bit-fever/data-collector/pkg/core/messaging/file"
-	"github.com/bit-fever/data-collector/pkg/core/messaging/rollover"
-	"github.com/bit-fever/data-collector/pkg/core/messaging/system"
-	"github.com/bit-fever/data-collector/pkg/core/messaging/update"
-	"github.com/bit-fever/data-collector/pkg/db"
+	"github.com/tradalia/core/msg"
+	"github.com/tradalia/data-collector/pkg/core/messaging/file"
+	"github.com/tradalia/data-collector/pkg/core/messaging/rollover"
+	"github.com/tradalia/data-collector/pkg/core/messaging/system"
+	"github.com/tradalia/data-collector/pkg/core/messaging/update"
+	"github.com/tradalia/data-collector/pkg/db"
 )
 
 //=============================================================================

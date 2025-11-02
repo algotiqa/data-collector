@@ -28,9 +28,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/bit-fever/data-collector/pkg/db"
-	"github.com/bit-fever/data-collector/pkg/ds"
-	"github.com/bit-fever/data-collector/pkg/platform"
+	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/tradalia/data-collector/pkg/ds"
+	"github.com/tradalia/data-collector/pkg/platform"
 )
 
 //=============================================================================

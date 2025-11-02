@@ -25,7 +25,7 @@ THE SOFTWARE.
 package db
 
 import (
-	"github.com/bit-fever/core/req"
+	"github.com/tradalia/core/req"
 	"gorm.io/gorm"
 )
 

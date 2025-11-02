@@ -25,10 +25,10 @@ THE SOFTWARE.
 package platform
 
 import (
-	"github.com/bit-fever/core"
-	"github.com/bit-fever/core/auth"
-	"github.com/bit-fever/core/datatype"
-	"github.com/bit-fever/core/req"
+	"github.com/tradalia/core"
+	"github.com/tradalia/core/auth"
+	"github.com/tradalia/core/datatype"
+	"github.com/tradalia/core/req"
 	"strconv"
 )
 

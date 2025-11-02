@@ -25,8 +25,8 @@ THE SOFTWARE.
 package process
 
 import (
-	"github.com/bit-fever/data-collector/pkg/app"
-	"github.com/bit-fever/data-collector/pkg/core/process/invloader"
+	"github.com/tradalia/data-collector/pkg/app"
+	"github.com/tradalia/data-collector/pkg/core/process/invloader"
 )
 
 //=============================================================================

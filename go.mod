@@ -1,10 +1,10 @@
-module github.com/bit-fever/data-collector
+module github.com/tradalia/data-collector
 
-go 1.24.0
+go 1.24.2
 
 require (
-	github.com/bit-fever/core v1.10.11
-	github.com/bit-fever/sick-engine v0.0.2
+	github.com/tradalia/core v1.10.11
+	github.com/tradalia/sick-engine v0.0.2
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-sql-driver/mysql v1.9.3 // indirect
 	github.com/jackc/pgx/v5 v5.7.6

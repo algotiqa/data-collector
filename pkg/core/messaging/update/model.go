@@ -24,7 +24,7 @@ THE SOFTWARE.
 
 package update
 
-import "github.com/bit-fever/data-collector/pkg/db"
+import "github.com/tradalia/data-collector/pkg/db"
 
 //=============================================================================
 //===

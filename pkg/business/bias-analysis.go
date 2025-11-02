@@ -25,9 +25,9 @@ THE SOFTWARE.
 package business
 
 import (
-	"github.com/bit-fever/core/auth"
-	"github.com/bit-fever/core/req"
-	"github.com/bit-fever/data-collector/pkg/db"
+	"github.com/tradalia/core/auth"
+	"github.com/tradalia/core/req"
+	"github.com/tradalia/data-collector/pkg/db"
 	"gorm.io/gorm"
 )
 

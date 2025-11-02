@@ -25,18 +25,18 @@ THE SOFTWARE.
 package main
 
 import (
-	"github.com/bit-fever/core/auth"
-	"github.com/bit-fever/core/boot"
-	"github.com/bit-fever/core/msg"
-	"github.com/bit-fever/core/req"
-	"github.com/bit-fever/data-collector/pkg/app"
-	"github.com/bit-fever/data-collector/pkg/core/jobmanager"
-	"github.com/bit-fever/data-collector/pkg/core/messaging"
-	"github.com/bit-fever/data-collector/pkg/core/process"
-	"github.com/bit-fever/data-collector/pkg/db"
-	"github.com/bit-fever/data-collector/pkg/ds"
-	"github.com/bit-fever/data-collector/pkg/platform"
-	"github.com/bit-fever/data-collector/pkg/service"
+	"github.com/tradalia/core/auth"
+	"github.com/tradalia/core/boot"
+	"github.com/tradalia/core/msg"
+	"github.com/tradalia/core/req"
+	"github.com/tradalia/data-collector/pkg/app"
+	"github.com/tradalia/data-collector/pkg/core/jobmanager"
+	"github.com/tradalia/data-collector/pkg/core/messaging"
+	"github.com/tradalia/data-collector/pkg/core/process"
+	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/tradalia/data-collector/pkg/ds"
+	"github.com/tradalia/data-collector/pkg/platform"
+	"github.com/tradalia/data-collector/pkg/service"
 	"log/slog"
 )
 
