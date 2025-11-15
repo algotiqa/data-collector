@@ -26,6 +26,7 @@ package business
 
 import (
 	"errors"
+
 	"github.com/tradalia/core/auth"
 	"github.com/tradalia/data-collector/pkg/db"
 	"gorm.io/gorm"
@@ -41,7 +42,8 @@ func GetBiasConfigsByAnalysisId(tx *gorm.DB, c *auth.Context, baId uint) (*[]*Bi
 		return nil, err
 	}
 
-	var result []*BiasConfig
+	//--- DON'T replace with 'var result []*BiasConfig' because a null is returned when no records are found
+	result := []*BiasConfig{}
 
 	for _, dbc := range *list {
 		bc := &BiasConfig{}

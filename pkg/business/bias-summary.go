@@ -147,13 +147,19 @@ func GetBiasSummaryData(c *auth.Context, id uint, bsr *BiasSummaryResponse) erro
 
 	loc,_:= time.LoadLocation(bsr.config.Timezone)
 	da   := ds.NewDataAggregator(ds.TimeSlotFunction30m, loc)
-	err  := ds.GetDataPoints(DefaultFrom, DefaultTo, &bsr.config.DataConfig, loc, da)
 
+	params := &DataInstrumentDataParams{
+		Location  :  loc,
+		From      :  DefaultFrom,
+		To        :  DefaultTo,
+		Reduction :  0,
+		Aggregator: da,
+	}
+
+	dataPoints,err := getDataPoints(params, bsr.config)
 	if err != nil {
 		return err
 	}
-
-	dataPoints := da.DataPoints()
 
 	for i, dpCurr := range dataPoints {
 		if i>0 {
