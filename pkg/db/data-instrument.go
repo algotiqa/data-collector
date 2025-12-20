@@ -188,6 +188,28 @@ func GetVirtualDataInstrumentByProductId(tx *gorm.DB, pId uint) (*DataInstrument
 
 //=============================================================================
 
+func GetContinuousDataInstrumentByProductId(tx *gorm.DB, pId uint) (*DataInstrument, error) {
+	var list []DataInstrument
+
+	filter := map[string]any{}
+	filter["data_product_id"] = pId
+	filter["continuous"]      = true
+
+	res := tx.Where(filter).Find(&list)
+
+	if res.Error != nil {
+		return nil, req.NewServerErrorByError(res.Error)
+	}
+
+	if len(list) == 1 {
+		return &list[0], nil
+	}
+
+	return nil, nil
+}
+
+//=============================================================================
+
 func GetDataInstrumentBySymbol(tx *gorm.DB, productId uint, symbol string) (*DataInstrument, error) {
 	filter := map[string]any{}
 	filter["data_product_id"] = productId

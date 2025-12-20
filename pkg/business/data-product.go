@@ -26,6 +26,7 @@ package business
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/tradalia/core/auth"
@@ -39,6 +40,45 @@ import (
 
 func GetDataInstrumentsByProductId(tx *gorm.DB, c *auth.Context, productId uint, stored bool)(*[]db.DataInstrumentExt, error) {
 	return db.GetDataInstrumentsByProductIdFull(tx, productId, stored)
+}
+
+//=============================================================================
+
+func CreateDataConfigForProduct(c *auth.Context, tx *gorm.DB, id uint) (*DataConfig, error) {
+	var i *db.DataInstrument
+
+	p, err := getDataProductAndCheckAccess(tx, c, id, "CreateDataConfigForProduct")
+	if err == nil {
+		if p == nil {
+			return nil, errors.New(fmt.Sprintf("data product not found: %d", id))
+		}
+
+		if p.Status != db.DPStatusReady {
+			return nil, errors.New(fmt.Sprintf("data product not ready: %d", id))
+		}
+
+		i, err = db.GetVirtualDataInstrumentByProductId(tx, p.Id)
+		if err == nil {
+			if i != nil {
+				var instruments *[]db.DataInstrument
+				instruments,err = db.GetRollingDataInstrumentsByProductIdFast(tx, p.Id, p.Months)
+				if err == nil {
+					return createConfig(i, p, instruments), nil
+				}
+			} else {
+				i, err = db.GetContinuousDataInstrumentByProductId(tx, p.Id)
+				if err == nil {
+					if i != nil {
+						return createConfig(i, p, nil), nil
+					}
+
+					return nil, errors.New("no continuous or virtual data instrument found")
+				}
+			}
+		}
+	}
+
+	return nil, err
 }
 
 //=============================================================================
