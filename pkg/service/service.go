@@ -49,7 +49,7 @@ func Init(router *gin.Engine, cfg *app.Config, logger *slog.Logger) {
 
 	router.GET ("/api/collector/v1/data-products/:id/instruments",      ctrl.Secure(getDataInstrumentsByProductId, roles.Admin_User_Service))
 	router.POST("/api/collector/v1/data-products/:id/instruments",      ctrl.Secure(uploadDataInstrumentData,      roles.Admin_User_Service))
-	router.POST("/api/collector/v1/data-products/:id/analysis",         ctrl.Secure(analyzeDataProduct,            roles.Admin_User_Service))
+	router.GET ("/api/collector/v1/data-products/:id/analysis",         ctrl.Secure(analyzeDataProduct,            roles.Admin_User_Service))
 
 	router.GET   ("/api/collector/v1/bias-analyses",                    ctrl.Secure(getBiasAnalyses,               roles.Admin_User_Service))
 	router.POST  ("/api/collector/v1/bias-analyses",                    ctrl.Secure(addBiasAnalysis,               roles.Admin_User_Service))

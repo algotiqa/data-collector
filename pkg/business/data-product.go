@@ -26,7 +26,6 @@ package business
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 
 	"github.com/tradalia/core/auth"
@@ -50,11 +49,7 @@ func CreateDataConfigForProduct(c *auth.Context, tx *gorm.DB, id uint) (*DataCon
 	p, err := getDataProductAndCheckAccess(tx, c, id, "CreateDataConfigForProduct")
 	if err == nil {
 		if p == nil {
-			return nil, errors.New(fmt.Sprintf("data product not found: %d", id))
-		}
-
-		if p.Status != db.DPStatusReady {
-			return nil, errors.New(fmt.Sprintf("data product not ready: %d", id))
+			return nil, req.NewNotFoundError("data product not found: %d", id)
 		}
 
 		i, err = db.GetVirtualDataInstrumentByProductId(tx, p.Id)
@@ -72,7 +67,7 @@ func CreateDataConfigForProduct(c *auth.Context, tx *gorm.DB, id uint) (*DataCon
 						return createConfig(i, p, nil), nil
 					}
 
-					return nil, errors.New("no continuous or virtual data instrument found")
+					return nil, req.NewBadRequestError("no continuous or virtual data instrument found for : %v", p.Symbol)
 				}
 			}
 		}

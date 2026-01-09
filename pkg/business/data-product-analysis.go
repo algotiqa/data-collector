@@ -30,7 +30,31 @@ import (
 
 	"github.com/tradalia/core/auth"
 	"github.com/tradalia/core/datatype"
+	"github.com/tradalia/data-collector/pkg/core"
 	"github.com/tradalia/data-collector/pkg/ds"
+	"golang.org/x/exp/stats"
+)
+
+//=============================================================================
+
+const (
+	DirectionStrongBear = -2
+	DirectionBear       = -1
+	DirectionNeutral    =  0
+	DirectionBull       =  1
+	DirectionStrongBull =  2
+)
+
+const (
+	VolatilityQuiet        = 0
+	VolatilityNormal       = 1
+	VolatilityVolatile     = 2
+	VolatilityVeryVolatile = 3
+)
+
+const (
+	SqnLen = 100
+	AtrLen =  20
 )
 
 //=============================================================================
@@ -44,54 +68,34 @@ type DataProductAnalysisSpec struct {
 //=============================================================================
 
 type DataProductAnalysisResponse struct {
-	Id           uint
-	Symbol       string
-	From         datatype.IntDate
-	To           datatype.IntDate
-	Days         int
-	DailyResults []*DailyResult
+	Id              uint             `json:"id"`
+	Symbol          string           `json:"symbol"`
+	From            datatype.IntDate `json:"from"`
+	To              datatype.IntDate `json:"to"`
+	Days            int              `json:"days"`
+	DailyResults    []*DailyResult   `json:"dailyResults"`
 }
 
 //=============================================================================
-
-const (
-	DRDirectionStrongBear = -2
-	DRDirectionBear       = -1
-	DRDirectionNeutral    =  0
-	DRDirectionBull       =  1
-	DRDirectionStrongBull =  2
-)
-
-const (
-	DRVolatilityQuiet        = 0
-	DRVolatilityNormal       = 1
-	DRVolatilityVolatile     = 2
-	DRVolatilityVeryVolatile = 3
-)
 
 type DailyResult struct {
-	Date            datatype.IntDate
-	Price           float64
-	PercDailyChange float64
-	Sqn100          float64
-	TrueRange       float64
-	PercAtr20       float64
-	Direction       int
-	Volatility      int
+	Date            datatype.IntDate `json:"date"`
+	Price           float64          `json:"price"`
+	PercDailyChange float64          `json:"percDailyChange"`
+	Sqn100          float64          `json:"sqn100"`
+	TrueRange       float64          `json:"trueRange"`
+	PercAtr20       float64          `json:"percAtr20"`
+	Direction       int              `json:"direction"`
+	Volatility      int              `json:"volatility"`
 }
-
-//=============================================================================
-
-const (
-	SqnLen = 100
-	AtrLen =  20
-)
 
 //=============================================================================
 
 func AnalyzeProduct(c *auth.Context, spec *DataProductAnalysisSpec) (*DataProductAnalysisResponse,error){
 	spec.Config.DataConfig.Timeframe = "1440m"
 
+	//--- Save symbol as it is changed by getDataPoints to loop over the instruments
+	symbol := spec.Config.DataConfig.Symbol
 	params := parseProductDataParams(spec)
 
 	dataPoints, err := getDataPoints(params, spec.Config)
@@ -99,18 +103,20 @@ func AnalyzeProduct(c *auth.Context, spec *DataProductAnalysisSpec) (*DataProduc
 		return nil, err
 	}
 
-	res := &DataProductAnalysisResponse{
-		Id     : spec.Id,
-		Symbol : spec.Config.DataConfig.Symbol,
-		From   : datatype.ToIntDate(&params.From),
-		To     : datatype.ToIntDate(&params.To),
-		Days   : spec.BackDays,
-	}
-
 	initialResults := createDailyResults(dataPoints)
 	dailyResults   := calcSqnAndAtr(initialResults)
 
-	res.DailyResults = dailyResults
+	res := &DataProductAnalysisResponse{
+		Id          : spec.Id,
+		Symbol      : symbol,
+		From        : datatype.ToIntDate(&params.From),
+		To          : datatype.ToIntDate(&params.To),
+		Days        : len(dailyResults),
+		DailyResults: dailyResults,
+	}
+
+	calcAllVolatility(res)
+	normalizeValues(res)
 
 	return res, nil
 }
@@ -177,13 +183,25 @@ func createDailyResults(dataPoints []*ds.DataPoint) []*DailyResult {
 
 //=============================================================================
 
+func calcTrueRange(curr *ds.DataPoint, prev *ds.DataPoint) float64 {
+	range1 := curr.High - curr.Low
+	range2 := math.Abs(curr.High - prev.Close)
+	range3 := math.Abs(curr.Low - prev.Close)
+
+	return math.Max(math.Max(range1, range2), range3)
+}
+
+//=============================================================================
+
 func calcSqnAndAtr(list []*DailyResult) []*DailyResult {
 	var result []*DailyResult
 
 	for i, dr := range list {
 		if i >= SqnLen -1 {
-			dr.Sqn100    = calcSqn(list, i - SqnLen + 1, i)
-			dr.PercAtr20 = calcAtr(list, i - AtrLen + 1, i)
+			dr.Sqn100     = calcSqn(list, i - SqnLen + 1, i)
+			dr.PercAtr20  = calcAtr(list, i - AtrLen + 1, i)
+			dr.Direction  = calcDirection(dr.Sqn100)
+
 			result = append(result, dr)
 		}
 	}
@@ -221,16 +239,6 @@ func calcSqn(list []*DailyResult, start int, end int) float64 {
 
 //=============================================================================
 
-func calcTrueRange(curr *ds.DataPoint, prev *ds.DataPoint) float64 {
-	range1 := curr.High - curr.Low
-	range2 := math.Abs(curr.High - prev.Close)
-	range3 := math.Abs(curr.Low - prev.Close)
-
-	return math.Max(math.Max(range1, range2), range3)
-}
-
-//=============================================================================
-
 func calcAtr(list []*DailyResult, start int, end int) float64 {
 	sum := 0.0
 
@@ -246,6 +254,64 @@ func calcAtr(list []*DailyResult, start int, end int) float64 {
 	}
 
 	return mean / price
+}
+
+//=============================================================================
+
+func calcDirection(sqn float64) int {
+	if sqn < -0.7  { return DirectionStrongBear }
+	if sqn <  0    { return DirectionBear       }
+	if sqn <  0.7  { return DirectionNeutral    }
+	if sqn <  1.47 { return DirectionBull       }
+
+	return DirectionStrongBull
+}
+
+//=============================================================================
+
+func calcAllVolatility(res *DataProductAnalysisResponse) {
+	if res.DailyResults == nil {
+		return
+	}
+
+	atr20 := flattenAtr(res.DailyResults)
+	mean,std := stats.MeanAndStdDev(atr20)
+
+	for i, v := range atr20 {
+		res.DailyResults[i].Volatility = calcVolatility(v, mean, std)
+	}
+}
+
+//=============================================================================
+
+func flattenAtr(list []*DailyResult) []float64 {
+	var results []float64
+
+	for _,dr := range list {
+		results = append(results, dr.PercAtr20)
+	}
+
+	return results
+}
+
+//=============================================================================
+
+func calcVolatility(percAtr float64, mean float64, std float64) int {
+	if percAtr < mean - std/2 { return VolatilityQuiet    }
+	if percAtr < mean + std/2 { return VolatilityNormal   }
+	if percAtr < mean + std*3 { return VolatilityVolatile }
+
+	return VolatilityVeryVolatile
+}
+
+//=============================================================================
+
+func normalizeValues(res *DataProductAnalysisResponse) {
+	for _,dr := range res.DailyResults {
+		dr.PercDailyChange = core.Trunc2d(dr.PercDailyChange * 100)
+		dr.PercAtr20       = core.Trunc2d(dr.PercAtr20       * 100)
+		dr.Sqn100          = core.Trunc2d(dr.Sqn100)
+	}
 }
 
 //=============================================================================
