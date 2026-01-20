@@ -8,11 +8,11 @@ database:
   username: tradalia
   password: tradalia
 authentication:
-  authority: https://tradalia-server:8443/auth/realms/tradalia
-  clientId: tradalia-backend
-  clientSecret: YdImL2TpOb120tnerwsmLVJv6F3nHv0o
+  authority: https://algotiqa-server:8443/auth/realms/algotiqa
+  clientId: algotiqa-backend
+  clientSecret: ddKGvsqWMKQT4v4lWS03Jr9i3ZEJHzv1
 platform:
-  system: https://tradalia-server:8449/api/system
+  system: https://algotiqa-server:8449/api/system
 messaging:
   address: localhost:8450
   username: rabbit-admin

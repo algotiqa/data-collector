@@ -30,13 +30,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tradalia/core/datatype"
-	"github.com/tradalia/core/msg"
-	"github.com/tradalia/data-collector/pkg/app"
-	"github.com/tradalia/data-collector/pkg/core/jobmanager"
-	"github.com/tradalia/data-collector/pkg/core/messaging/rollover"
-	"github.com/tradalia/data-collector/pkg/db"
-	"github.com/tradalia/data-collector/pkg/platform"
+	"github.com/algotiqa/core/datatype"
+	"github.com/algotiqa/core/msg"
+	"github.com/algotiqa/data-collector/pkg/app"
+	"github.com/algotiqa/data-collector/pkg/core/jobmanager"
+	"github.com/algotiqa/data-collector/pkg/core/messaging/rollover"
+	"github.com/algotiqa/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/platform"
 	"gorm.io/gorm"
 )
 
@@ -69,14 +69,14 @@ func Init(cfg *app.Config) *time.Ticker {
 func CreateDownloadJob(di *db.DataInstrument, blk *db.DataBlock, priority int, timezone string) *db.DownloadJob {
 	return &db.DownloadJob{
 		DataInstrumentId: di.Id,
-		DataBlockId     : blk.Id,
-		LoadFrom        : calcLoadFrom(di.ExpirationDate),
-		LoadTo          : calcLoadTo(di.ExpirationDate),
-		CurrDay         : 0,
-		TotDays         : int(DaysBack),
-		Status          : db.DJStatusWaiting,
-		Priority        : priority,
-		ProductTimezone : timezone,
+		DataBlockId:      blk.Id,
+		LoadFrom:         calcLoadFrom(di.ExpirationDate),
+		LoadTo:           calcLoadTo(di.ExpirationDate),
+		CurrDay:          0,
+		TotDays:          int(DaysBack),
+		Status:           db.DJStatusWaiting,
+		Priority:         priority,
+		ProductTimezone:  timezone,
 	}
 }
 
@@ -87,7 +87,7 @@ func CreateDownloadJob(di *db.DataInstrument, blk *db.DataBlock, priority int, t
 //=============================================================================
 
 func run() {
-	products,err := getDataProductsToWork()
+	products, err := getDataProductsToWork()
 	if err != nil {
 		slog.Error("Cannot retrieve data products to work", "error", err)
 		return
@@ -107,14 +107,14 @@ func run() {
 func getDataProductsToWork() (*[]db.DataProduct, error) {
 	filter := map[string]any{}
 	filter["supports_multiple_data"] = false
-	filter["connected"]              = true
-	filter["status"]                 = db.DPStatusFetchingInventory
+	filter["connected"] = true
+	filter["status"] = db.DPStatusFetchingInventory
 
 	var list *[]db.DataProduct
 
 	err := db.RunInTransaction(func(tx *gorm.DB) error {
 		var err error
-		list,err = db.GetDataProducts(tx, filter, 0, 1000)
+		list, err = db.GetDataProducts(tx, filter, 0, 1000)
 		return err
 	})
 
@@ -126,19 +126,19 @@ func getDataProductsToWork() (*[]db.DataProduct, error) {
 func processDataProduct(dp *db.DataProduct) {
 	slog.Info("processDataProduct: Start loading inventory for product", "user", dp.Username, "connection", dp.ConnectionCode, "symbol", dp.Symbol)
 
-	instruments,err := platform.GetInstruments(dp.Username, dp.ConnectionCode, dp.Symbol)
+	instruments, err := platform.GetInstruments(dp.Username, dp.ConnectionCode, dp.Symbol)
 
 	var jobs []*jobmanager.ScheduledJob
 
 	if err != nil {
-		err = errors.New("Cannot get instruments from root : "+err.Error())
+		err = errors.New("Cannot get instruments from root : " + err.Error())
 	} else {
 		list := convertInstruments(dp.Id, instruments)
 
 		err = db.RunInTransaction(func(tx *gorm.DB) error {
-			jobs,err = addDataInstruments(tx, dp, list)
+			jobs, err = addDataInstruments(tx, dp, list)
 			if err != nil {
-				return errors.New("Cannot add new data instruments : "+ err.Error())
+				return errors.New("Cannot add new data instruments : " + err.Error())
 			}
 
 			err = addVirtualInstrument(tx, dp)
@@ -176,12 +176,12 @@ func convertInstruments(dpId uint, instruments []platform.Instrument) []*db.Data
 
 	for _, instr := range instruments {
 		di := db.DataInstrument{
-			DataProductId : dpId,
-			Symbol        : instr.Name,
-			Name          : instr.Description,
+			DataProductId:  dpId,
+			Symbol:         instr.Name,
+			Name:           instr.Description,
 			ExpirationDate: instr.ExpirationDate,
-			Continuous    : instr.Continuous,
-			Month         : instr.Month,
+			Continuous:     instr.Continuous,
+			Month:          instr.Month,
 		}
 
 		list = append(list, &di)
@@ -201,22 +201,22 @@ func addDataInstruments(tx *gorm.DB, dp *db.DataProduct, instruments []*db.DataI
 		var err error
 
 		if shouldLoad(di, dp.Months) {
-			block,isNew,err = getOrCreateDataBlock(tx, dp, di)
+			block, isNew, err = getOrCreateDataBlock(tx, dp, di)
 			if err != nil {
-				return nil,err
+				return nil, err
 			}
 		}
 
 		err = db.AddDataInstrument(tx, di)
 		if err != nil {
-			return nil,err
+			return nil, err
 		}
 
 		if isNew {
 			var sj *jobmanager.ScheduledJob
-			sj,err = addDownloadJob(tx, block, di, dp.Timezone)
+			sj, err = addDownloadJob(tx, block, di, dp.Timezone)
 			if err != nil {
-				return nil,err
+				return nil, err
 			}
 
 			jobs = append(jobs, sj)
@@ -245,15 +245,15 @@ func getOrCreateDataBlock(tx *gorm.DB, dp *db.DataProduct, di *db.DataInstrument
 	if block == nil {
 		block = &db.DataBlock{
 			SystemCode: dp.SystemCode,
-			Root      : dp.Symbol,
-			Symbol    : di.Symbol,
-			Global    : true,
-			Status    : db.DBStatusWaiting,
+			Root:       dp.Symbol,
+			Symbol:     di.Symbol,
+			Global:     true,
+			Status:     db.DBStatusWaiting,
 		}
 
 		err := db.AddDataBlock(tx, block)
 		if err != nil {
-			return nil,false,err
+			return nil, false, err
 		}
 
 		isNew = true
@@ -261,26 +261,26 @@ func getOrCreateDataBlock(tx *gorm.DB, dp *db.DataProduct, di *db.DataInstrument
 
 	di.DataBlockId = &block.Id
 
-	return block,isNew,nil
+	return block, isNew, nil
 }
 
 //=============================================================================
 
-func addDownloadJob(tx *gorm.DB, block *db.DataBlock, di *db.DataInstrument, timezone string) (*jobmanager.ScheduledJob,error) {
+func addDownloadJob(tx *gorm.DB, block *db.DataBlock, di *db.DataInstrument, timezone string) (*jobmanager.ScheduledJob, error) {
 	job := CreateDownloadJob(di, block, 0, timezone)
 	err := db.AddDownloadJob(tx, job)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
-	return jobmanager.NewScheduledJob(block, job),nil
+	return jobmanager.NewScheduledJob(block, job), nil
 }
 
 //=============================================================================
 
 func calcLoadFrom(expDate *time.Time) datatype.IntDate {
 	//--- For every instrument, we consider 1 year of data
-	old := expDate.Add(-DaysBack * 24 *time.Hour)
+	old := expDate.Add(-DaysBack * 24 * time.Hour)
 	return datatype.ToIntDate(&old)
 }
 
@@ -310,12 +310,12 @@ func sendRollRecalcMessage(id uint) error {
 
 func addVirtualInstrument(tx *gorm.DB, dp *db.DataProduct) error {
 	di := &db.DataInstrument{
-		DataProductId    : dp.Id,
-		Symbol           : "#"+ dp.Symbol,
-		Name             : dp.Symbol+" [Virtual instrument]",
-		Continuous       : true,
+		DataProductId:     dp.Id,
+		Symbol:            "#" + dp.Symbol,
+		Name:              dp.Symbol + " [Virtual instrument]",
+		Continuous:        true,
 		VirtualInstrument: true,
-		RolloverStatus   : db.DIRollStatusWaiting,
+		RolloverStatus:    db.DIRollStatusWaiting,
 	}
 
 	return db.AddDataInstrument(tx, di)

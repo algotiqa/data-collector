@@ -30,8 +30,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/tradalia/data-collector/pkg/app"
-	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/app"
+	"github.com/algotiqa/data-collector/pkg/db"
 	"gorm.io/gorm"
 )
 
@@ -103,7 +103,7 @@ func DisconnectAll() {
 
 func initCache() error {
 	return db.RunInTransaction(func(tx *gorm.DB) error {
-		blocksMap,err := loadDataBlocks(tx)
+		blocksMap, err := loadDataBlocks(tx)
 		if err != nil {
 			return err
 		}
@@ -124,27 +124,27 @@ func initCache() error {
 
 //=============================================================================
 
-func loadDataBlocks(tx *gorm.DB) (map[uint]*db.DataBlock,error) {
-	list,err := db.GetGlobalDataBlocks(tx)
+func loadDataBlocks(tx *gorm.DB) (map[uint]*db.DataBlock, error) {
+	list, err := db.GetGlobalDataBlocks(tx)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
-	for _,blk := range *list {
+	for _, blk := range *list {
 		cache.addDataBlock(&blk)
 
 		if blk.Status == db.DBStatusLoading || blk.Status == db.DBStatusProcessing {
 			blk.Status = db.DBStatusWaiting
 			err = db.UpdateDataBlock(tx, &blk)
 			if err != nil {
-				return nil,err
+				return nil, err
 			}
 		}
 	}
 
 	blockMap := convertToMap(list)
 
-	return blockMap,nil
+	return blockMap, nil
 }
 
 //=============================================================================
@@ -162,12 +162,12 @@ func convertToMap(list *[]db.DataBlock) map[uint]*db.DataBlock {
 //=============================================================================
 
 func loadDataProducts(tx *gorm.DB) error {
-	filter :=map[string]any{
-		"supports_multiple_data":false,
+	filter := map[string]any{
+		"supports_multiple_data": false,
 	}
-	products,err := db.GetDataProducts(tx, filter,0,5000)
+	products, err := db.GetDataProducts(tx, filter, 0, 5000)
 	if err == nil {
-		for _,dp := range *products {
+		for _, dp := range *products {
 			cache.setConnection(dp.SystemCode, dp.Username, dp.ConnectionCode, dp.Connected)
 		}
 	}
@@ -178,12 +178,12 @@ func loadDataProducts(tx *gorm.DB) error {
 //=============================================================================
 
 func loadDownloadJobs(tx *gorm.DB, blocksMap map[uint]*db.DataBlock) error {
-	jobs,err := db.GetDownloadJobs(tx)
+	jobs, err := db.GetDownloadJobs(tx)
 	if err == nil {
 		for _, job := range *jobs {
-			block,found := blocksMap[job.DataBlockId]
+			block, found := blocksMap[job.DataBlockId]
 			if !found {
-				return errors.New("DataBlock not found! --> id:"+ strconv.Itoa(int(job.DataBlockId)))
+				return errors.New("DataBlock not found! --> id:" + strconv.Itoa(int(job.DataBlockId)))
 			}
 
 			sj := NewScheduledJob(block, &job)

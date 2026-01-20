@@ -28,9 +28,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/tradalia/data-collector/pkg/business"
-	"github.com/tradalia/data-collector/pkg/db"
-	"github.com/tradalia/data-collector/pkg/ds"
+	"github.com/algotiqa/data-collector/pkg/business"
+	"github.com/algotiqa/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/ds"
 	"gorm.io/gorm"
 )
 
@@ -38,14 +38,14 @@ import (
 
 func Upload(job *db.IngestionJob) bool {
 	//--- Wait 2 secs to allow the commit to complete
-	time.Sleep(time.Second *2)
+	time.Sleep(time.Second * 2)
 
 	slog.Info("HandleFileUpload: Uploading data file into datastore", "filename", job.Filename)
 	var context *ParserContext
 
-	block,err := setDataBlockInLoading(job)
+	block, err := setDataBlockInLoading(job)
 	if err == nil {
-		context,err = ingestDatafile(job,block)
+		context, err = ingestDatafile(job, block)
 		if err == nil {
 			err = setDataBlockInProcessing(job, block, context.DataRange)
 			if err == nil {
@@ -55,7 +55,7 @@ func Upload(job *db.IngestionJob) bool {
 					err = setBlockInReady(block)
 					if err == nil {
 						slog.Info("HandleFileUpload: Operation complete", "filename", job.Filename)
-						_=ds.DeleteDataFile(job.Filename)
+						_ = ds.DeleteDataFile(job.Filename)
 						return true
 					}
 				}
@@ -65,7 +65,7 @@ func Upload(job *db.IngestionJob) bool {
 
 	slog.Error("HandleFileUpload: Raised error while processing message", "filename", job.Filename, "error", err.Error())
 	setJobInError(err, job, block)
-	_=ds.DeleteDataFile(job.Filename)
+	_ = ds.DeleteDataFile(job.Filename)
 	return true
 }
 
@@ -76,17 +76,17 @@ func setDataBlockInLoading(job *db.IngestionJob) (*db.DataBlock, error) {
 	var err error
 
 	err = db.RunInTransaction(func(tx *gorm.DB) error {
-		b,err = db.GetDataBlockById(tx, job.DataBlockId)
+		b, err = db.GetDataBlockById(tx, job.DataBlockId)
 		if err != nil {
 			return err
 		}
-		b.Status   = db.DBStatusLoading
+		b.Status = db.DBStatusLoading
 		b.Progress = 0
 
 		return db.UpdateDataBlock(tx, b)
 	})
 
-	return b,err
+	return b, err
 }
 
 //=============================================================================
@@ -94,26 +94,25 @@ func setDataBlockInLoading(job *db.IngestionJob) (*db.DataBlock, error) {
 func ingestDatafile(job *db.IngestionJob, b *db.DataBlock) (*ParserContext, error) {
 	start := time.Now()
 
-	parser,err := NewParser(job.Parser)
+	parser, err := NewParser(job.Parser)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	//--- This is the file's timezone (will be used to parse dates inside the file)
-	floc,err := retrieveLocation(job.Timezone)
+	floc, err := retrieveLocation(job.Timezone)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
-	config,err := retrieveConfig(job.DataInstrumentId)
+	config, err := retrieveConfig(job.DataInstrumentId)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
-
-	file,err := ds.OpenDatafile(job.Filename)
+	file, err := ds.OpenDatafile(job.Filename)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	//--- We need to use UTC otherwise daily aggregates are not properly computed
@@ -122,7 +121,7 @@ func ingestDatafile(job *db.IngestionJob, b *db.DataBlock) (*ParserContext, erro
 
 	err = parser.Parse(context)
 	if err != nil {
-		slog.Error("ingestDatafile: Parser error --> "+ err.Error())
+		slog.Error("ingestDatafile: Parser error --> " + err.Error())
 		return nil, err
 	}
 
@@ -138,7 +137,7 @@ func ingestDatafile(job *db.IngestionJob, b *db.DataBlock) (*ParserContext, erro
 
 //=============================================================================
 
-func retrieveLocation(timezone string) (*time.Location, error){
+func retrieveLocation(timezone string) (*time.Location, error) {
 	if timezone == "utc" {
 		return time.UTC, nil
 	}
@@ -172,7 +171,7 @@ func setDataBlockInProcessing(job *db.IngestionJob, b *db.DataBlock, dr *DataRan
 			b.DataTo = dr.ToDay
 		}
 
-		b.Status  = db.DBStatusProcessing
+		b.Status = db.DBStatusProcessing
 		err := db.UpdateDataBlock(tx, b)
 		if err != nil {
 			return err
@@ -186,8 +185,8 @@ func setDataBlockInProcessing(job *db.IngestionJob, b *db.DataBlock, dr *DataRan
 
 func setBlockInReady(block *db.DataBlock) error {
 	return db.RunInTransaction(func(tx *gorm.DB) error {
-		block.Status  = db.DBStatusReady
-		block.Progress= 100
+		block.Status = db.DBStatusReady
+		block.Progress = 100
 
 		return db.UpdateDataBlock(tx, block)
 	})
@@ -198,7 +197,7 @@ func setBlockInReady(block *db.DataBlock) error {
 func setJobInError(err error, job *db.IngestionJob, block *db.DataBlock) {
 	_ = db.RunInTransaction(func(tx *gorm.DB) error {
 		block.Status = db.DBStatusError
-		job  .Error  = err.Error()
+		job.Error = err.Error()
 		_ = db.UpdateDataBlock(tx, block)
 		_ = db.UpdateIngestionJob(tx, job)
 
@@ -209,7 +208,7 @@ func setJobInError(err error, job *db.IngestionJob, block *db.DataBlock) {
 //=============================================================================
 
 func calcAggregates(context *ParserContext) error {
-	da5m   := context.DataAggreg
+	da5m := context.DataAggreg
 	config := context.Config
 
 	return ds.BuildAggregates(da5m, config)

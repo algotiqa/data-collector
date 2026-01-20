@@ -28,9 +28,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/tradalia/core/msg"
-	"github.com/tradalia/data-collector/pkg/core/messaging/rollover"
-	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/algotiqa/core/msg"
+	"github.com/algotiqa/data-collector/pkg/core/messaging/rollover"
+	"github.com/algotiqa/data-collector/pkg/db"
 	"gorm.io/gorm"
 )
 
@@ -54,8 +54,8 @@ type JobContext struct {
 func NewJobContext(uc *UserConnection, cache *AdapterCache, resuming bool) *JobContext {
 	return &JobContext{
 		userConnection: uc,
-		cache         : cache,
-		resuming      : resuming,
+		cache:          cache,
+		resuming:       resuming,
 	}
 }
 
@@ -77,7 +77,7 @@ func (jc *JobContext) UpdateJob(blkStatus db.DBStatus, jobStatus db.DJStatus, jo
 
 		blk.Status = blkStatus
 		job.Status = jobStatus
-		job.Error  = jobErr
+		job.Error = jobErr
 
 		err := db.UpdateDataBlock(tx, blk)
 		if err == nil {
@@ -90,7 +90,7 @@ func (jc *JobContext) UpdateJob(blkStatus db.DBStatus, jobStatus db.DJStatus, jo
 		if err != nil {
 			blk.Status = oldBlkStatus
 			job.Status = oldJobStatus
-			job.Error  = ""
+			job.Error = ""
 		}
 
 		return err
@@ -121,9 +121,9 @@ func (jc *JobContext) EndJob() error {
 		}
 
 		if err != nil {
-			blk.Status   = oldBlk.Status
+			blk.Status = oldBlk.Status
 			blk.DataFrom = oldBlk.DataFrom
-			blk.DataTo   = oldBlk.DataTo
+			blk.DataTo = oldBlk.DataTo
 			job.UserConnection = ""
 		}
 
@@ -144,7 +144,7 @@ func (jc *JobContext) AbortJob(jobErr string) error {
 	now := time.Now()
 	jc.userConnection.scheduledJob.lastError = &now
 
-	jc.cache.freeConnection(jc.userConnection,true)
+	jc.cache.freeConnection(jc.userConnection, true)
 
 	return err
 }
@@ -155,7 +155,7 @@ func (jc *JobContext) SleepJob() error {
 	jc.userConnection.scheduledJob.job.UserConnection = ""
 	err := jc.UpdateJob(db.DBStatusSleeping, db.DJStatusWaiting, "", true)
 
-	jc.cache.freeConnection(jc.userConnection,true)
+	jc.cache.freeConnection(jc.userConnection, true)
 
 	return err
 }

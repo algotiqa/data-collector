@@ -25,16 +25,16 @@ THE SOFTWARE.
 package business
 
 import (
-	"github.com/tradalia/core/auth"
-	"github.com/tradalia/core/req"
-	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/core/req"
+	"github.com/algotiqa/data-collector/pkg/db"
 	"gorm.io/gorm"
 )
 
 //=============================================================================
 
 func GetBiasAnalyses(tx *gorm.DB, c *auth.Context, filter map[string]any, offset int, limit int, details bool) (*[]db.BiasAnalysisFull, error) {
-	if ! c.Session.IsAdmin() {
+	if !c.Session.IsAdmin() {
 		filter["username"] = c.Session.Username
 	}
 
@@ -81,7 +81,7 @@ func GetBiasAnalysisById(tx *gorm.DB, c *auth.Context, id uint, details bool) (*
 
 	//--- Put all together
 
-	bae := BiasAnalysisExt{ *ba, *di, *bp, configs }
+	bae := BiasAnalysisExt{*ba, *di, *bp, configs}
 
 	return &bae, nil
 }
@@ -92,11 +92,11 @@ func AddBiasAnalysis(tx *gorm.DB, c *auth.Context, bas *BiasAnalysisSpec) (*db.B
 	c.Log.Info("AddBiasAnalysis: Adding a new bias analysis", "name", bas.Name)
 
 	var ba db.BiasAnalysis
-	ba.Username         = c.Session.Username
+	ba.Username = c.Session.Username
 	ba.DataInstrumentId = bas.DataInstrumentId
-	ba.BrokerProductId  = bas.BrokerProductId
-	ba.Name             = bas.Name
-	ba.Notes            = bas.Notes
+	ba.BrokerProductId = bas.BrokerProductId
+	ba.Name = bas.Name
+	ba.Notes = bas.Notes
 
 	err := db.AddBiasAnalysis(tx, &ba)
 
@@ -120,9 +120,9 @@ func UpdateBiasAnalysis(tx *gorm.DB, c *auth.Context, id uint, bas *BiasAnalysis
 	}
 
 	ba.DataInstrumentId = bas.DataInstrumentId
-	ba.BrokerProductId  = bas.BrokerProductId
-	ba.Name             = bas.Name
-	ba.Notes            = bas.Notes
+	ba.BrokerProductId = bas.BrokerProductId
+	ba.Name = bas.Name
+	ba.Notes = bas.Notes
 
 	err = db.UpdateBiasAnalysis(tx, ba)
 	if err != nil {
@@ -161,16 +161,16 @@ func getBiasAnalysisAndCheckAccess(tx *gorm.DB, c *auth.Context, id uint, functi
 	ba, err := db.GetBiasAnalysisById(tx, id)
 
 	if err != nil {
-		c.Log.Error(function +": Could not retrieve bias analysis", "error", err.Error())
+		c.Log.Error(function+": Could not retrieve bias analysis", "error", err.Error())
 		return nil, err
 	}
 
 	if ba == nil {
-		c.Log.Error(function +": Bias analysis was not found", "id", id)
+		c.Log.Error(function+": Bias analysis was not found", "id", id)
 		return nil, req.NewNotFoundError("Bias analysis was not found: %v", id)
 	}
 
-	if ! c.Session.IsAdmin() {
+	if !c.Session.IsAdmin() {
 		if ba.Username != c.Session.Username {
 			c.Log.Error(function+": Bias analysis not owned by user", "id", id)
 			return nil, req.NewForbiddenError("Bias analysis is not owned by user: %v", id)

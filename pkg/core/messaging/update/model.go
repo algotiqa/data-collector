@@ -24,7 +24,7 @@ THE SOFTWARE.
 
 package update
 
-import "github.com/tradalia/data-collector/pkg/db"
+import "github.com/algotiqa/data-collector/pkg/db"
 
 //=============================================================================
 //===
@@ -41,16 +41,16 @@ type Currency struct {
 //=============================================================================
 
 type Connection struct {
-	Id                   uint    `json:"id"`
-	Username             string  `json:"username"`
-	Code                 string  `json:"code"`
-	Name                 string  `json:"name"`
-	SystemCode           string  `json:"systemCode"`
-	SystemName           string  `json:"systemName"`
-	Connected            bool    `json:"connected"`
-	SupportsData         bool    `json:"supportsData"`
-	SupportsMultipleData bool    `json:"supportsMultipleData"`
-	SupportsInventory    bool    `json:"supportsInventory"`
+	Id                   uint   `json:"id"`
+	Username             string `json:"username"`
+	Code                 string `json:"code"`
+	Name                 string `json:"name"`
+	SystemCode           string `json:"systemCode"`
+	SystemName           string `json:"systemName"`
+	Connected            bool   `json:"connected"`
+	SupportsData         bool   `json:"supportsData"`
+	SupportsMultipleData bool   `json:"supportsMultipleData"`
+	SupportsInventory    bool   `json:"supportsInventory"`
 }
 
 //=============================================================================
@@ -97,12 +97,12 @@ type DataProductMessage struct {
 //=============================================================================
 
 type BrokerProduct struct {
-	Id               uint     `json:"id"`
-	Username         string   `json:"username"`
-	Symbol           string   `json:"symbol"`
-	Name             string   `json:"name"`
-	PointValue       float32  `json:"pointValue"`
-	CostPerOperation float32  `json:"costPerOperation"`
+	Id               uint    `json:"id"`
+	Username         string  `json:"username"`
+	Symbol           string  `json:"symbol"`
+	Name             string  `json:"name"`
+	PointValue       float32 `json:"pointValue"`
+	CostPerOperation float32 `json:"costPerOperation"`
 }
 
 //=============================================================================

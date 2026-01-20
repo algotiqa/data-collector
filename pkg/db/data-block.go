@@ -25,13 +25,13 @@ THE SOFTWARE.
 package db
 
 import (
-	"github.com/tradalia/core/req"
+	"github.com/algotiqa/core/req"
 	"gorm.io/gorm"
 )
 
 //=============================================================================
 
-func GetGlobalDataBlocks(tx *gorm.DB) (*[]DataBlock, error){
+func GetGlobalDataBlocks(tx *gorm.DB) (*[]DataBlock, error) {
 	var list []DataBlock
 
 	filter := map[string]any{}
@@ -43,7 +43,7 @@ func GetGlobalDataBlocks(tx *gorm.DB) (*[]DataBlock, error){
 		return nil, req.NewServerErrorByError(res.Error)
 	}
 
-	return &list,nil
+	return &list, nil
 }
 
 //=============================================================================
@@ -65,24 +65,24 @@ func GetDataBlockById(tx *gorm.DB, id uint) (*DataBlock, error) {
 
 //=============================================================================
 
-func GetDataProductsByBlockId(tx *gorm.DB, id uint) (*[]uint, error){
+func GetDataProductsByBlockId(tx *gorm.DB, id uint) (*[]uint, error) {
 	var list []uint
 
 	filter := map[string]any{}
 	filter["data_block_id"] = id
 
 	res := tx.
-			Table("data_instrument").
-			Select("DISTINCT dp.id").
-			Joins("JOIN data_block db ON db.id = data_block_id JOIN data_product dp ON dp.id = data_product_id").
-			Where(filter).
-			Find(&list)
+		Table("data_instrument").
+		Select("DISTINCT dp.id").
+		Joins("JOIN data_block db ON db.id = data_block_id JOIN data_product dp ON dp.id = data_product_id").
+		Where(filter).
+		Find(&list)
 
 	if res.Error != nil {
 		return nil, req.NewServerErrorByError(res.Error)
 	}
 
-	return &list,nil
+	return &list, nil
 }
 
 //=============================================================================

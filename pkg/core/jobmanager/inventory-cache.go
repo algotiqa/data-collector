@@ -27,7 +27,7 @@ package jobmanager
 import (
 	"sync"
 
-	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/db"
 )
 
 //=============================================================================
@@ -91,7 +91,7 @@ func (ic *InventoryCache) setConnection(systemCode, username, connCode string, c
 func (ic *InventoryCache) disconnectAll() {
 	ic.RLock()
 
-	for _,ac := range ic.adapters {
+	for _, ac := range ic.adapters {
 		ac.disconnectAll()
 	}
 
@@ -104,7 +104,7 @@ func (ic *InventoryCache) schedule(maxJobs int, e Executor) {
 	ic.RLock()
 	ic.RUnlock()
 
-	for _,ac := range ic.adapters {
+	for _, ac := range ic.adapters {
 		maxJobs = ac.schedule(maxJobs, e)
 
 		if maxJobs == 0 {

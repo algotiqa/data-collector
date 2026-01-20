@@ -28,9 +28,9 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/tradalia/core/msg"
-	"github.com/tradalia/data-collector/pkg/core/jobmanager"
-	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/algotiqa/core/msg"
+	"github.com/algotiqa/data-collector/pkg/core/jobmanager"
+	"github.com/algotiqa/data-collector/pkg/db"
 	"gorm.io/gorm"
 )
 

@@ -27,23 +27,26 @@ package rollover
 import (
 	"time"
 
-	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/db"
 )
 
 //=============================================================================
 
 func calcRolloverDate(expirDate time.Time, rollTrigger db.DPRollTrigger) time.Time {
 	switch rollTrigger {
-		case db.DPRollTriggerSD4 : return calcRolloverDateByDays(expirDate, 4)
-		case db.DPRollTriggerSD6 : return calcRolloverDateByDays(expirDate, 6)
-		default: return calcRolloverDateByDays(expirDate, 30)
+	case db.DPRollTriggerSD4:
+		return calcRolloverDateByDays(expirDate, 4)
+	case db.DPRollTriggerSD6:
+		return calcRolloverDateByDays(expirDate, 6)
+	default:
+		return calcRolloverDateByDays(expirDate, 30)
 	}
 }
 
 //=============================================================================
 
 func calcRolloverDateByDays(expirDate time.Time, days int) time.Time {
-	return expirDate.AddDate(0,0, -days)
+	return expirDate.AddDate(0, 0, -days)
 }
 
 //=============================================================================

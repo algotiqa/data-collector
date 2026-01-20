@@ -27,8 +27,8 @@ package business
 import (
 	"errors"
 
-	"github.com/tradalia/core/auth"
-	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/data-collector/pkg/db"
 	"gorm.io/gorm"
 )
 
@@ -59,7 +59,7 @@ func GetBiasConfigsByAnalysisId(tx *gorm.DB, c *auth.Context, baId uint) (*[]*Bi
 func AddBiasConfig(tx *gorm.DB, c *auth.Context, baId uint, bcs *BiasConfigSpec) (*db.BiasConfig, error) {
 	c.Log.Info("AddBiasConfig: Adding a new bias config", "baId", baId)
 
-	if err:=checkBiasConfigSpec(c, bcs); err != nil {
+	if err := checkBiasConfigSpec(c, bcs); err != nil {
 		return nil, err
 	}
 
@@ -81,12 +81,12 @@ func AddBiasConfig(tx *gorm.DB, c *auth.Context, baId uint, bcs *BiasConfigSpec)
 func UpdateBiasConfig(tx *gorm.DB, c *auth.Context, baId uint, id uint, bcs *BiasConfigSpec) (*db.BiasConfig, error) {
 	c.Log.Info("UpdateBiasConfig: Updating a bias config", "id", id, "baId", baId)
 
-	if err:=checkBiasConfigSpec(c, bcs); err != nil {
+	if err := checkBiasConfigSpec(c, bcs); err != nil {
 		return nil, err
 	}
 
 	bc := bcs.ToBiasConfig()
-	bc.Id             = id
+	bc.Id = id
 	bc.BiasAnalysisId = baId
 
 	err := db.UpdateBiasConfig(tx, bc)

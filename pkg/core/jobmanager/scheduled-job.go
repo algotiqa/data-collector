@@ -27,8 +27,8 @@ package jobmanager
 import (
 	"time"
 
-	"github.com/tradalia/core/datatype"
-	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/algotiqa/core/datatype"
+	"github.com/algotiqa/data-collector/pkg/db"
 )
 
 //=============================================================================

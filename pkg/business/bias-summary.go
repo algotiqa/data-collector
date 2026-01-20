@@ -27,9 +27,9 @@ package business
 import (
 	"time"
 
-	"github.com/tradalia/core/auth"
-	"github.com/tradalia/data-collector/pkg/db"
-	"github.com/tradalia/data-collector/pkg/ds"
+	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/ds"
 	"gorm.io/gorm"
 )
 
@@ -66,7 +66,7 @@ type DataPointDowList struct {
 //-----------------------------------------------------------------------------
 
 func (l *DataPointDowList) Add(dpd *DataPointDelta) {
-	slot := (dpd.Hour * 60 + dpd.Min) / 30
+	slot := (dpd.Hour*60 + dpd.Min) / 30
 	dpsl := l.Slots[slot]
 	if dpsl == nil {
 		dpsl = &DataPointSlotList{
@@ -89,9 +89,9 @@ type DataPointSlotList struct {
 
 func (l *DataPointSlotList) Add(dpd *DataPointDelta) {
 	dpe := &DataPointEntry{
-		Year : int16(dpd.Year),
+		Year:  int16(dpd.Year),
 		Month: int8(dpd.Month),
-		Day  : int8(dpd.Day),
+		Day:   int8(dpd.Day),
 		Delta: dpd.Delta,
 	}
 
@@ -112,7 +112,7 @@ type DataPointEntry struct {
 func GetBiasSummaryInfo(tx *gorm.DB, c *auth.Context, id uint) (*BiasSummaryResponse, error) {
 	c.Log.Info("GetBiasSummary: Getting bias analysis", "id", id)
 
-	ba,err := db.GetBiasAnalysisById(tx, id)
+	ba, err := db.GetBiasAnalysisById(tx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -133,10 +133,10 @@ func GetBiasSummaryInfo(tx *gorm.DB, c *auth.Context, id uint) (*BiasSummaryResp
 	c.Log.Info("GetBiasSummary: Found bias analysis", "id", id, "name", ba.Name)
 
 	return &BiasSummaryResponse{
-		BiasAnalysis : ba,
+		BiasAnalysis:  ba,
 		BrokerProduct: bp,
-		Result       : [7]*DataPointDowList{},
-		config       : config,
+		Result:        [7]*DataPointDowList{},
+		config:        config,
 	}, nil
 }
 
@@ -145,25 +145,25 @@ func GetBiasSummaryInfo(tx *gorm.DB, c *auth.Context, id uint) (*BiasSummaryResp
 func GetBiasSummaryData(c *auth.Context, id uint, bsr *BiasSummaryResponse) error {
 	bsr.config.DataConfig.Timeframe = "15m"
 
-	loc,_:= time.LoadLocation(bsr.config.Timezone)
-	da   := ds.NewDataAggregator(ds.TimeSlotFunction30m, loc)
+	loc, _ := time.LoadLocation(bsr.config.Timezone)
+	da := ds.NewDataAggregator(ds.TimeSlotFunction30m, loc)
 
 	params := &DataInstrumentDataParams{
-		Location  :  loc,
-		From      :  DefaultFrom,
-		To        :  DefaultTo,
-		Reduction :  0,
+		Location:   loc,
+		From:       DefaultFrom,
+		To:         DefaultTo,
+		Reduction:  0,
 		Aggregator: da,
 	}
 
-	dataPoints,err := getDataPoints(params, bsr.config)
+	dataPoints, err := getDataPoints(params, bsr.config)
 	if err != nil {
 		return err
 	}
 
 	for i, dpCurr := range dataPoints {
-		if i>0 {
-			dpPrev  := dataPoints[i -1]
+		if i > 0 {
+			dpPrev := dataPoints[i-1]
 			dpDelta := newDataPointDelta(dpPrev, dpCurr)
 			bsr.Add(dpDelta)
 		}
@@ -186,19 +186,19 @@ func newDataPointDelta(dpPrev, dpCurr *ds.DataPoint) *DataPointDelta {
 
 	slotTime := dpCurr.Time.Add(-time.Minute * 30)
 
-	y,m,d := slotTime.Date()
-	hour  := slotTime.Hour()
-	mins  := slotTime.Minute()
-	dow   := slotTime.Weekday()
+	y, m, d := slotTime.Date()
+	hour := slotTime.Hour()
+	mins := slotTime.Minute()
+	dow := slotTime.Weekday()
 
 	return &DataPointDelta{
-		Year : y,
+		Year:  y,
 		Month: int(m),
-		Day  : d,
-		Hour : hour,
-		Min  : mins,
+		Day:   d,
+		Hour:  hour,
+		Min:   mins,
 		Delta: delta,
-		Dow  : int(dow),
+		Dow:   int(dow),
 	}
 }
 

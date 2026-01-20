@@ -27,7 +27,7 @@ package jobmanager
 import (
 	"sync"
 
-	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/db"
 )
 
 //=============================================================================
@@ -42,7 +42,7 @@ type ProductCache struct {
 
 func NewProductCache(root string) *ProductCache {
 	return &ProductCache{
-		root  : root,
+		root:   root,
 		blocks: make(map[string]*db.DataBlock),
 	}
 }

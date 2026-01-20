@@ -28,16 +28,16 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/tradalia/core/auth"
-	"github.com/tradalia/core/msg"
-	"github.com/tradalia/core/req"
-	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/core/msg"
+	"github.com/algotiqa/core/req"
+	"github.com/algotiqa/data-collector/pkg/db"
 	"gorm.io/gorm"
 )
 
 //=============================================================================
 
-func GetDataInstrumentsByProductId(tx *gorm.DB, c *auth.Context, productId uint, stored bool)(*[]db.DataInstrumentExt, error) {
+func GetDataInstrumentsByProductId(tx *gorm.DB, c *auth.Context, productId uint, stored bool) (*[]db.DataInstrumentExt, error) {
 	return db.GetDataInstrumentsByProductIdFull(tx, productId, stored)
 }
 
@@ -56,7 +56,7 @@ func CreateDataConfigForProduct(c *auth.Context, tx *gorm.DB, id uint) (*DataCon
 		if err == nil {
 			if i != nil {
 				var instruments *[]db.DataInstrument
-				instruments,err = db.GetRollingDataInstrumentsByProductIdFast(tx, p.Id, p.Months)
+				instruments, err = db.GetRollingDataInstrumentsByProductIdFast(tx, p.Id, p.Months)
 				if err == nil {
 					return createConfig(i, p, instruments), nil
 				}
@@ -94,12 +94,12 @@ func AddDataInstrumentAndJob(tx *gorm.DB, c *auth.Context, productId uint, spec 
 	var b *db.DataBlock
 
 	if i == nil {
-		i,b,err = createDataInstrument(tx, p, spec)
+		i, b, err = createDataInstrument(tx, p, spec)
 	} else {
-		b,err = updateDataInstrument(tx, i, spec)
+		b, err = updateDataInstrument(tx, i, spec)
 	}
 
-	timezone,err := calcTimezone(spec.FileTimezone, p)
+	timezone, err := calcTimezone(spec.FileTimezone, p)
 	if err != nil {
 		return err
 	}
@@ -108,11 +108,11 @@ func AddDataInstrumentAndJob(tx *gorm.DB, c *auth.Context, productId uint, spec 
 
 	job := &db.IngestionJob{
 		DataInstrumentId: i.Id,
-		DataBlockId     : b.Id,
-		Filename        : filename,
-		Bytes           : bytes,
-		Timezone        : timezone,
-		Parser          : spec.Parser,
+		DataBlockId:      b.Id,
+		Filename:         filename,
+		Bytes:            bytes,
+		Timezone:         timezone,
+		Parser:           spec.Parser,
 	}
 
 	err = db.AddIngestionJob(tx, job)
@@ -133,18 +133,18 @@ func getDataProductAndCheckAccess(tx *gorm.DB, c *auth.Context, id uint, functio
 	p, err := db.GetDataProductById(tx, id)
 
 	if err != nil {
-		c.Log.Error(function +": Could not retrieve data product", "error", err.Error())
+		c.Log.Error(function+": Could not retrieve data product", "error", err.Error())
 		return nil, err
 	}
 
 	if p == nil {
-		c.Log.Error(function +": Data product was not found", "id", id)
+		c.Log.Error(function+": Data product was not found", "id", id)
 		return nil, req.NewNotFoundError("Data product was not found: %v", id)
 	}
 
-	if ! c.Session.IsAdmin() {
+	if !c.Session.IsAdmin() {
 		if p.Username != c.Session.Username {
-			c.Log.Error(function +": Data product not owned by user", "id", id)
+			c.Log.Error(function+": Data product not owned by user", "id", id)
 			return nil, req.NewForbiddenError("Data product is not owned by user: %v", id)
 		}
 	}
@@ -158,31 +158,31 @@ func createDataInstrument(tx *gorm.DB, p *db.DataProduct, spec *DatafileUploadSp
 	//--- Add its associated DataBlock
 	b := &db.DataBlock{
 		SystemCode: p.SystemCode,
-		Root      : p.Symbol,
-		Symbol    : spec.Symbol,
-		Status    : db.DBStatusWaiting,
-		Global    : false,
-		Progress  : 0,
+		Root:       p.Symbol,
+		Symbol:     spec.Symbol,
+		Status:     db.DBStatusWaiting,
+		Global:     false,
+		Progress:   0,
 	}
 
 	err := db.AddDataBlock(tx, b)
 	if err != nil {
-		return nil,nil,err
+		return nil, nil, err
 	}
 
 	//--- Add a new DataInstrument
 
 	i := &db.DataInstrument{
 		DataProductId: p.Id,
-		DataBlockId  : &b.Id,
-		Symbol       : spec.Symbol,
-		Name         : spec.Name,
-		Continuous   : false,
+		DataBlockId:   &b.Id,
+		Symbol:        spec.Symbol,
+		Name:          spec.Name,
+		Continuous:    false,
 	}
 
 	err = db.AddDataInstrument(tx, i)
 
-	return i,b,err
+	return i, b, err
 }
 
 //=============================================================================
@@ -192,25 +192,25 @@ func updateDataInstrument(tx *gorm.DB, i *db.DataInstrument, spec *DatafileUploa
 
 	err := db.UpdateDataInstrument(tx, i)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	var b *db.DataBlock
-	b,err = db.GetDataBlockById(tx, *i.DataBlockId)
+	b, err = db.GetDataBlockById(tx, *i.DataBlockId)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	if b == nil {
-		return nil, errors.New("Panic: DataBlock was not found! --> id="+ strconv.Itoa(int(*i.DataBlockId)))
+		return nil, errors.New("Panic: DataBlock was not found! --> id=" + strconv.Itoa(int(*i.DataBlockId)))
 	}
 
-	b.Status   = db.DBStatusWaiting
+	b.Status = db.DBStatusWaiting
 	b.Progress = 0
 
 	err = db.UpdateDataBlock(tx, b)
 
-	return b,err
+	return b, err
 }
 
 //=============================================================================
@@ -228,15 +228,15 @@ func sendIngestJobMessage(c *auth.Context, job *db.IngestionJob) error {
 
 //=============================================================================
 
-func calcTimezone(fileTimezone string, p *db.DataProduct) (string, error){
+func calcTimezone(fileTimezone string, p *db.DataProduct) (string, error) {
 	if fileTimezone == "utc" {
-		return "utc",      nil
+		return "utc", nil
 	}
 	if fileTimezone == "exc" {
 		return p.Timezone, nil
 	}
 
-	return "", errors.New("Unknown file timezone: "+ fileTimezone)
+	return "", errors.New("Unknown file timezone: " + fileTimezone)
 }
 
 //=============================================================================

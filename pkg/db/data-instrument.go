@@ -28,7 +28,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tradalia/core/req"
+	"github.com/algotiqa/core/req"
 	"gorm.io/gorm"
 )
 
@@ -40,17 +40,17 @@ func GetDataInstrumentsByProductIdFull(tx *gorm.DB, pId uint, stored bool) (*[]D
 	filter := fmt.Sprintf("data_product_id = %d", pId)
 
 	if stored {
-		filter = filter +" AND (db.status IS NOT NULL OR virtual_instrument = 1)"
+		filter = filter + " AND (db.status IS NOT NULL OR virtual_instrument = 1)"
 	}
 
 	res := tx.
 		Select("data_instrument.*, " +
-					"db.status, db.data_from, db.data_to, db.progress, db.global," +
-					"dj.status dj_status, dj.priority dj_priority, dj.load_from dj_load_from, dj.load_to dj_load_to, dj.curr_day dj_curr_day, dj.tot_days dj_tot_days, dj.error dj_error," +
-					"ij.filename ij_filename, ij.records ij_records, ij.bytes ij_bytes, ij.timezone ij_timezone, ij.parser ij_parser, ij.error ij_error").
-		Joins("LEFT JOIN data_block db ON db.id = data_block_id "+
-				"LEFT JOIN download_job dj ON dj.data_instrument_id = data_instrument.id "+
-				"LEFT JOIN ingestion_job ij ON ij.data_instrument_id = data_instrument.id ").
+			"db.status, db.data_from, db.data_to, db.progress, db.global," +
+			"dj.status dj_status, dj.priority dj_priority, dj.load_from dj_load_from, dj.load_to dj_load_to, dj.curr_day dj_curr_day, dj.tot_days dj_tot_days, dj.error dj_error," +
+			"ij.filename ij_filename, ij.records ij_records, ij.bytes ij_bytes, ij.timezone ij_timezone, ij.parser ij_parser, ij.error ij_error").
+		Joins("LEFT JOIN data_block db ON db.id = data_block_id " +
+			"LEFT JOIN download_job dj ON dj.data_instrument_id = data_instrument.id " +
+			"LEFT JOIN ingestion_job ij ON ij.data_instrument_id = data_instrument.id ").
 		Where(filter).
 		Order("expiration_date").
 		Find(&list)
@@ -69,7 +69,7 @@ func GetRollingDataInstrumentsByProductId(tx *gorm.DB, pId uint, months string) 
 
 	filter := map[string]any{}
 	filter["data_product_id"] = pId
-	filter["continuous"]      = 0
+	filter["continuous"] = 0
 
 	res := tx.
 		Select("data_instrument.*, db.status, db.data_from, db.data_to, db.progress ").
@@ -86,7 +86,7 @@ func GetRollingDataInstrumentsByProductId(tx *gorm.DB, pId uint, months string) 
 	for _, die := range list {
 		//--- We need to add an instrument only if it is part of the month set
 		//--- (loaded continuous instruments cause issues)
-		if len(die.Month)>0 && strings.Index(months, die.Month) >= 0 {
+		if len(die.Month) > 0 && strings.Index(months, die.Month) >= 0 {
 			result = append(result, die)
 		}
 	}
@@ -101,7 +101,7 @@ func GetRollingDataInstrumentsByProductIdFast(tx *gorm.DB, pId uint, months stri
 
 	filter := map[string]any{}
 	filter["data_product_id"] = pId
-	filter["continuous"]      = 0
+	filter["continuous"] = 0
 
 	res := tx.Where(filter).
 		Order("expiration_date").
@@ -115,7 +115,7 @@ func GetRollingDataInstrumentsByProductIdFast(tx *gorm.DB, pId uint, months stri
 	for _, die := range list {
 		//--- We need to add an instrument only if it is part of the month set
 		//--- (loaded continuous instruments cause issues)
-		if len(die.Month)>0 && strings.Index(months, die.Month) >= 0 {
+		if len(die.Month) > 0 && strings.Index(months, die.Month) >= 0 {
 			result = append(result, die)
 		}
 	}
@@ -126,7 +126,7 @@ func GetRollingDataInstrumentsByProductIdFast(tx *gorm.DB, pId uint, months stri
 //=============================================================================
 
 func GetDataInstrumentsFull(tx *gorm.DB, filter map[string]any) (*[]DataInstrumentFull, error) {
-	if user,ok := filter["username"]; ok {
+	if user, ok := filter["username"]; ok {
 		delete(filter, "username")
 		filter["dp.username"] = user
 	}
@@ -170,7 +170,7 @@ func GetVirtualDataInstrumentByProductId(tx *gorm.DB, pId uint) (*DataInstrument
 	var list []DataInstrument
 
 	filter := map[string]any{}
-	filter["data_product_id"]    = pId
+	filter["data_product_id"] = pId
 	filter["virtual_instrument"] = true
 
 	res := tx.Where(filter).Find(&list)
@@ -193,7 +193,7 @@ func GetContinuousDataInstrumentByProductId(tx *gorm.DB, pId uint) (*DataInstrum
 
 	filter := map[string]any{}
 	filter["data_product_id"] = pId
-	filter["continuous"]      = true
+	filter["continuous"] = true
 
 	res := tx.Where(filter).Find(&list)
 
@@ -213,7 +213,7 @@ func GetContinuousDataInstrumentByProductId(tx *gorm.DB, pId uint) (*DataInstrum
 func GetDataInstrumentBySymbol(tx *gorm.DB, productId uint, symbol string) (*DataInstrument, error) {
 	filter := map[string]any{}
 	filter["data_product_id"] = productId
-	filter["symbol"]          = symbol
+	filter["symbol"] = symbol
 
 	var list []DataInstrument
 	res := tx.Where(filter).Find(&list)

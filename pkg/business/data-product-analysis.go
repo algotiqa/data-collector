@@ -28,10 +28,10 @@ import (
 	"math"
 	"time"
 
-	"github.com/tradalia/core/auth"
-	"github.com/tradalia/core/datatype"
-	"github.com/tradalia/data-collector/pkg/core"
-	"github.com/tradalia/data-collector/pkg/ds"
+	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/core/datatype"
+	"github.com/algotiqa/data-collector/pkg/core"
+	"github.com/algotiqa/data-collector/pkg/ds"
 	"golang.org/x/exp/stats"
 )
 
@@ -40,9 +40,9 @@ import (
 const (
 	DirectionStrongBear = -2
 	DirectionBear       = -1
-	DirectionNeutral    =  0
-	DirectionBull       =  1
-	DirectionStrongBull =  2
+	DirectionNeutral    = 0
+	DirectionBull       = 1
+	DirectionStrongBull = 2
 )
 
 const (
@@ -54,26 +54,26 @@ const (
 
 const (
 	SqnLen = 100
-	AtrLen =  20
+	AtrLen = 20
 )
 
 //=============================================================================
 
 type DataProductAnalysisSpec struct {
-	Id        uint
-	BackDays  int
-	Config    *DataConfig
+	Id       uint
+	BackDays int
+	Config   *DataConfig
 }
 
 //=============================================================================
 
 type DataProductAnalysisResponse struct {
-	Id              uint             `json:"id"`
-	Symbol          string           `json:"symbol"`
-	From            datatype.IntDate `json:"from"`
-	To              datatype.IntDate `json:"to"`
-	Days            int              `json:"days"`
-	DailyResults    []*DailyResult   `json:"dailyResults"`
+	Id           uint             `json:"id"`
+	Symbol       string           `json:"symbol"`
+	From         datatype.IntDate `json:"from"`
+	To           datatype.IntDate `json:"to"`
+	Days         int              `json:"days"`
+	DailyResults []*DailyResult   `json:"dailyResults"`
 }
 
 //=============================================================================
@@ -91,7 +91,7 @@ type DailyResult struct {
 
 //=============================================================================
 
-func AnalyzeProduct(c *auth.Context, spec *DataProductAnalysisSpec) (*DataProductAnalysisResponse,error){
+func AnalyzeProduct(c *auth.Context, spec *DataProductAnalysisSpec) (*DataProductAnalysisResponse, error) {
 	spec.Config.DataConfig.Timeframe = "1440m"
 
 	//--- Save symbol as it is changed by getDataPoints to loop over the instruments
@@ -104,14 +104,14 @@ func AnalyzeProduct(c *auth.Context, spec *DataProductAnalysisSpec) (*DataProduc
 	}
 
 	initialResults := createDailyResults(dataPoints)
-	dailyResults   := calcSqnAndAtr(initialResults)
+	dailyResults := calcSqnAndAtr(initialResults)
 
 	res := &DataProductAnalysisResponse{
-		Id          : spec.Id,
-		Symbol      : symbol,
-		From        : datatype.ToIntDate(&params.From),
-		To          : datatype.ToIntDate(&params.To),
-		Days        : len(dailyResults),
+		Id:           spec.Id,
+		Symbol:       symbol,
+		From:         datatype.ToIntDate(&params.From),
+		To:           datatype.ToIntDate(&params.To),
+		Days:         len(dailyResults),
 		DailyResults: dailyResults,
 	}
 
@@ -128,19 +128,19 @@ func AnalyzeProduct(c *auth.Context, spec *DataProductAnalysisSpec) (*DataProduc
 //=============================================================================
 
 func parseProductDataParams(spec *DataProductAnalysisSpec) *DataInstrumentDataParams {
-	to   := time.Now()
-	from := to.Add( -time.Hour * 24 * time.Duration(spec.BackDays))
-	da   := ds.NewDataAggregator(nil, time.UTC)
+	to := time.Now()
+	from := to.Add(-time.Hour * 24 * time.Duration(spec.BackDays))
+	da := ds.NewDataAggregator(nil, time.UTC)
 
 	if spec.BackDays == 0 {
 		from = DefaultFrom
 	}
 
 	return &DataInstrumentDataParams{
-		Location  : time.UTC,
-		From      : from.UTC(),
-		To        : to.UTC(),
-		Reduction : 0,
+		Location:   time.UTC,
+		From:       from.UTC(),
+		To:         to.UTC(),
+		Reduction:  0,
 		Aggregator: da,
 	}
 }
@@ -156,22 +156,22 @@ func createDailyResults(dataPoints []*ds.DataPoint) []*DailyResult {
 
 	for i, dp := range dataPoints {
 		if i > 0 {
-			prevClose := dataPoints[i -1].Close
-			delta     := dp.Close - prevClose
+			prevClose := dataPoints[i-1].Close
+			delta := dp.Close - prevClose
 
 			if prevClose != 0 {
-				delta  = delta  / prevClose
+				delta = delta / prevClose
 			} else {
-				delta  = 0
+				delta = 0
 			}
 
-			tr := calcTrueRange(dp, dataPoints[i -1])
+			tr := calcTrueRange(dp, dataPoints[i-1])
 
 			dr := &DailyResult{
-				Date            : datatype.ToIntDate(&dp.Time),
-				Price           : dp.Close,
-				PercDailyChange : delta,
-				TrueRange       : tr,
+				Date:            datatype.ToIntDate(&dp.Time),
+				Price:           dp.Close,
+				PercDailyChange: delta,
+				TrueRange:       tr,
 			}
 
 			results = append(results, dr)
@@ -197,10 +197,10 @@ func calcSqnAndAtr(list []*DailyResult) []*DailyResult {
 	var result []*DailyResult
 
 	for i, dr := range list {
-		if i >= SqnLen -1 {
-			dr.Sqn100     = calcSqn(list, i - SqnLen + 1, i)
-			dr.PercAtr20  = calcAtr(list, i - AtrLen + 1, i)
-			dr.Direction  = calcDirection(dr.Sqn100)
+		if i >= SqnLen-1 {
+			dr.Sqn100 = calcSqn(list, i-SqnLen+1, i)
+			dr.PercAtr20 = calcAtr(list, i-AtrLen+1, i)
+			dr.Direction = calcDirection(dr.Sqn100)
 
 			result = append(result, dr)
 		}
@@ -216,7 +216,7 @@ func calcSqn(list []*DailyResult, start int, end int) float64 {
 
 	sum := 0.0
 
-	for i:=start; i<=end; i++ {
+	for i := start; i <= end; i++ {
 		sum += list[i].PercDailyChange
 	}
 
@@ -224,15 +224,15 @@ func calcSqn(list []*DailyResult, start int, end int) float64 {
 
 	//--- Calc stdDev
 
-	sum   = 0.0
+	sum = 0.0
 	diff := 0.0
 
-	for i:=start; i<=end; i++ {
+	for i := start; i <= end; i++ {
 		diff = list[i].PercDailyChange - mean
-		sum += diff*diff
+		sum += diff * diff
 	}
 
-	stdDev := math.Sqrt(sum/float64(SqnLen))
+	stdDev := math.Sqrt(sum / float64(SqnLen))
 
 	return mean * math.Sqrt(SqnLen) / stdDev
 }
@@ -242,11 +242,11 @@ func calcSqn(list []*DailyResult, start int, end int) float64 {
 func calcAtr(list []*DailyResult, start int, end int) float64 {
 	sum := 0.0
 
-	for i:=start; i<=end; i++ {
+	for i := start; i <= end; i++ {
 		sum += list[i].TrueRange
 	}
 
-	mean  := sum / float64(AtrLen)
+	mean := sum / float64(AtrLen)
 	price := list[end].Price
 
 	if price == 0 {
@@ -259,10 +259,18 @@ func calcAtr(list []*DailyResult, start int, end int) float64 {
 //=============================================================================
 
 func calcDirection(sqn float64) int {
-	if sqn < -0.7  { return DirectionStrongBear }
-	if sqn <  0    { return DirectionBear       }
-	if sqn <  0.7  { return DirectionNeutral    }
-	if sqn <  1.47 { return DirectionBull       }
+	if sqn < -0.7 {
+		return DirectionStrongBear
+	}
+	if sqn < 0 {
+		return DirectionBear
+	}
+	if sqn < 0.7 {
+		return DirectionNeutral
+	}
+	if sqn < 1.47 {
+		return DirectionBull
+	}
 
 	return DirectionStrongBull
 }
@@ -275,7 +283,7 @@ func calcAllVolatility(res *DataProductAnalysisResponse) {
 	}
 
 	atr20 := flattenAtr(res.DailyResults)
-	mean,std := stats.MeanAndStdDev(atr20)
+	mean, std := stats.MeanAndStdDev(atr20)
 
 	for i, v := range atr20 {
 		res.DailyResults[i].Volatility = calcVolatility(v, mean, std)
@@ -287,7 +295,7 @@ func calcAllVolatility(res *DataProductAnalysisResponse) {
 func flattenAtr(list []*DailyResult) []float64 {
 	var results []float64
 
-	for _,dr := range list {
+	for _, dr := range list {
 		results = append(results, dr.PercAtr20)
 	}
 
@@ -297,9 +305,15 @@ func flattenAtr(list []*DailyResult) []float64 {
 //=============================================================================
 
 func calcVolatility(percAtr float64, mean float64, std float64) int {
-	if percAtr < mean - std/2 { return VolatilityQuiet    }
-	if percAtr < mean + std/2 { return VolatilityNormal   }
-	if percAtr < mean + std*3 { return VolatilityVolatile }
+	if percAtr < mean-std/2 {
+		return VolatilityQuiet
+	}
+	if percAtr < mean+std/2 {
+		return VolatilityNormal
+	}
+	if percAtr < mean+std*3 {
+		return VolatilityVolatile
+	}
 
 	return VolatilityVeryVolatile
 }
@@ -307,10 +321,10 @@ func calcVolatility(percAtr float64, mean float64, std float64) int {
 //=============================================================================
 
 func normalizeValues(res *DataProductAnalysisResponse) {
-	for _,dr := range res.DailyResults {
+	for _, dr := range res.DailyResults {
 		dr.PercDailyChange = core.Trunc2d(dr.PercDailyChange * 100)
-		dr.PercAtr20       = core.Trunc2d(dr.PercAtr20       * 100)
-		dr.Sqn100          = core.Trunc2d(dr.Sqn100)
+		dr.PercAtr20 = core.Trunc2d(dr.PercAtr20 * 100)
+		dr.Sqn100 = core.Trunc2d(dr.Sqn100)
 	}
 }
 

@@ -28,12 +28,12 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/tradalia/core/msg"
-	"github.com/tradalia/data-collector/pkg/core/messaging/file"
-	"github.com/tradalia/data-collector/pkg/core/messaging/rollover"
-	"github.com/tradalia/data-collector/pkg/core/messaging/system"
-	"github.com/tradalia/data-collector/pkg/core/messaging/update"
-	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/algotiqa/core/msg"
+	"github.com/algotiqa/data-collector/pkg/core/messaging/file"
+	"github.com/algotiqa/data-collector/pkg/core/messaging/rollover"
+	"github.com/algotiqa/data-collector/pkg/core/messaging/system"
+	"github.com/algotiqa/data-collector/pkg/core/messaging/update"
+	"github.com/algotiqa/data-collector/pkg/db"
 )
 
 //=============================================================================
@@ -42,8 +42,8 @@ func InitMessageListener() {
 	slog.Info("Starting message listeners...")
 
 	go msg.ReceiveMessages(msg.QuInventoryToCollector, update.HandleUpdateMessage)
-	go msg.ReceiveMessages(msg.QuSystemToCollector,    system.HandleMessage)
-	go msg.ReceiveMessages(msg.QuCollectorToInternal,  handleInternalMessage)
+	go msg.ReceiveMessages(msg.QuSystemToCollector, system.HandleMessage)
+	go msg.ReceiveMessages(msg.QuCollectorToInternal, handleInternalMessage)
 }
 
 //=============================================================================

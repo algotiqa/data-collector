@@ -25,16 +25,16 @@ THE SOFTWARE.
 package business
 
 import (
-	"github.com/tradalia/data-collector/pkg/core"
-	"github.com/tradalia/data-collector/pkg/db"
-	"github.com/tradalia/data-collector/pkg/ds"
+	"github.com/algotiqa/data-collector/pkg/core"
+	"github.com/algotiqa/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/ds"
 	"math"
 	"time"
 )
 
 //=============================================================================
 
-const SlotNum int = 48*5
+const SlotNum int = 48 * 5
 
 //=============================================================================
 //===
@@ -69,12 +69,12 @@ func NewBacktestedConfig(bc *BiasConfig, bp *db.BrokerProduct, spec *BiasBacktes
 	es, err := NewExcludedSet(bc.Excludes)
 
 	return &BacktestedConfig{
-		BiasConfig   : bc,
-		Trades       : []*BiasTrade{},
-		Sequences    : []*TriggeringSequence{},
-		excludedSet  : es,
+		BiasConfig:    bc,
+		Trades:        []*BiasTrade{},
+		Sequences:     []*TriggeringSequence{},
+		excludedSet:   es,
 		brokerProduct: bp,
-		spec         : spec,
+		spec:          spec,
 	}, err
 }
 
@@ -111,7 +111,7 @@ func (btc *BacktestedConfig) RunBacktest(ti *TimeInfo, currDp *ds.DataPoint, pre
 //=============================================================================
 
 func (btc *BacktestedConfig) IsDayAllowed(ti *TimeInfo) bool {
-	return btc.BiasConfig.Months[ti.month -1] && !btc.excludedSet.ShouldBeExcluded(ti.month, ti.year)
+	return btc.BiasConfig.Months[ti.month-1] && !btc.excludedSet.ShouldBeExcluded(ti.month, ti.year)
 }
 
 //=============================================================================
@@ -139,9 +139,9 @@ func (btc *BacktestedConfig) EndTrade(currDp *ds.DataPoint, exitCondition int8) 
 	btc.currTrade.Close(currDp, btc.brokerProduct, exitCondition)
 
 	btc.GrossProfit += btc.currTrade.GrossProfit
-	btc.NetProfit   += btc.currTrade.NetProfit
+	btc.NetProfit += btc.currTrade.NetProfit
 
-	btc.Trades    = append(btc.Trades, btc.currTrade)
+	btc.Trades = append(btc.Trades, btc.currTrade)
 	btc.currTrade = nil
 }
 
@@ -152,13 +152,13 @@ func (btc *BacktestedConfig) Finish() {
 
 	if numTrades > 0 {
 		btc.GrossAvgTrade = core.Trunc2d(btc.GrossProfit / float64(numTrades))
-		btc.NetAvgTrade   = core.Trunc2d(btc.NetProfit   / float64(numTrades))
+		btc.NetAvgTrade = core.Trunc2d(btc.NetProfit / float64(numTrades))
 	}
 
 	btc.GrossProfit = math.Trunc(btc.GrossProfit)
-	btc.NetProfit   = math.Trunc(btc.NetProfit)
+	btc.NetProfit = math.Trunc(btc.NetProfit)
 
-	btc.Equity        = NewEquity(btc.Trades)
+	btc.Equity = NewEquity(btc.Trades)
 	btc.ProfitDistrib = NewProfitDistribution(btc.Trades, float64(btc.brokerProduct.CostPerOperation))
 }
 
@@ -169,10 +169,10 @@ func (btc *BacktestedConfig) Finish() {
 //=============================================================================
 
 type TimeInfo struct {
-	dayOfWeek  int16
-	slot       int16
-	month      int16
-	year       int16
+	dayOfWeek int16
+	slot      int16
+	month     int16
+	year      int16
 }
 
 //=============================================================================
@@ -189,7 +189,7 @@ type TriggeringSequence struct {
 
 func NewTriggeringSequence(index int, dataPoints []*ds.DataPoint, slotNum int) *TriggeringSequence {
 	i := index - slotNum
-	if i <0 {
+	if i < 0 {
 		return nil
 	}
 
@@ -197,7 +197,7 @@ func NewTriggeringSequence(index int, dataPoints []*ds.DataPoint, slotNum int) *
 
 	var points []*ds.DataPoint
 
-	for ; i<index; i++ {
+	for ; i < index; i++ {
 		points = append(points, dataPoints[i])
 	}
 
@@ -221,34 +221,34 @@ type Equity struct {
 //=============================================================================
 
 func NewEquity(trades []*BiasTrade) *Equity {
-	var timeArray   []time.Time
+	var timeArray []time.Time
 	var grossEquity []float64
-	var netEquity   []float64
+	var netEquity []float64
 
 	var grossPrev float64 = 0
-	var netPrev   float64 = 0
+	var netPrev float64 = 0
 
 	for _, bt := range trades {
 		timeArray = append(timeArray, bt.ExitTime)
 
-		grossEquity = append(grossEquity, grossPrev + bt.GrossProfit)
-		netEquity   = append(netEquity,   netPrev   + bt.NetProfit)
+		grossEquity = append(grossEquity, grossPrev+bt.GrossProfit)
+		netEquity = append(netEquity, netPrev+bt.NetProfit)
 
 		grossPrev = grossPrev + bt.GrossProfit
-		netPrev   = netPrev   + bt.NetProfit
+		netPrev = netPrev + bt.NetProfit
 	}
 
 	//--- Truncate decimal digits on profits
 
 	for i, _ := range timeArray {
 		grossEquity[i] = math.Trunc(grossEquity[i])
-		netEquity[i]   = math.Trunc(netEquity  [i])
+		netEquity[i] = math.Trunc(netEquity[i])
 	}
 
 	return &Equity{
-		Time : timeArray,
+		Time:  timeArray,
 		Gross: grossEquity,
-		Net  : netEquity,
+		Net:   netEquity,
 	}
 }
 
@@ -267,7 +267,7 @@ type ProfitDistribution struct {
 //=============================================================================
 
 func NewProfitDistribution(trades []*BiasTrade, costPerOperation float64) *ProfitDistribution {
-	var netProfits[16]float64
+	var netProfits [16]float64
 	var numTrades [16]int
 	var avgTrades [16]float64
 
@@ -276,24 +276,24 @@ func NewProfitDistribution(trades []*BiasTrade, costPerOperation float64) *Profi
 	for _, bt := range trades {
 		found := false
 
-		for i:=0; i<15; i++ {
+		for i := 0; i < 15; i++ {
 			if bt.NetProfit < threshold[i] {
 				netProfits[i] += bt.NetProfit
-				numTrades [i] += 1
+				numTrades[i] += 1
 				found = true
 				break
 			}
 		}
 
-		if ! found {
+		if !found {
 			netProfits[15] += bt.NetProfit
-			numTrades [15] += 1
+			numTrades[15] += 1
 		}
 	}
 
 	//---trunc profits and calc avgTrade to 2 decimal digits
 
-	for i:=0; i<16; i++ {
+	for i := 0; i < 16; i++ {
 		if numTrades[i] != 0 {
 			avgTrades[i] = core.Trunc2d(netProfits[i] / float64(numTrades[i]))
 		}
@@ -303,8 +303,8 @@ func NewProfitDistribution(trades []*BiasTrade, costPerOperation float64) *Profi
 
 	return &ProfitDistribution{
 		NetProfits: netProfits,
-		NumTrades : numTrades,
-		AvgTrades : avgTrades,
+		NumTrades:  numTrades,
+		AvgTrades:  avgTrades,
 	}
 }
 
@@ -313,14 +313,14 @@ func NewProfitDistribution(trades []*BiasTrade, costPerOperation float64) *Profi
 func calcThreshold(costPerOperation float64) []float64 {
 	var threshold []float64
 
-	for i:=6; i>=0; i-- {
-		threshold = append(threshold, -math.Pow(2, float64(i)) * costPerOperation)
+	for i := 6; i >= 0; i-- {
+		threshold = append(threshold, -math.Pow(2, float64(i))*costPerOperation)
 	}
 
 	threshold = append(threshold, 0)
 
-	for i:=0; i<=6; i++ {
-		threshold = append(threshold, math.Pow(2, float64(i)) * costPerOperation)
+	for i := 0; i <= 6; i++ {
+		threshold = append(threshold, math.Pow(2, float64(i))*costPerOperation)
 	}
 
 	return threshold

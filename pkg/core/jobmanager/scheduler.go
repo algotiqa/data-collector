@@ -28,7 +28,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/db"
 )
 
 //=============================================================================
@@ -38,7 +38,7 @@ const (
 )
 
 type Executor func(ac *AdapterCache, uc *UserConnection) bool
-type Resumer  func(ac *AdapterCache, uc *UserConnection)
+type Resumer func(ac *AdapterCache, uc *UserConnection)
 
 //=============================================================================
 

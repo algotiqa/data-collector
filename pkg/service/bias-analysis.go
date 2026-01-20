@@ -25,9 +25,9 @@ THE SOFTWARE.
 package service
 
 import (
-	"github.com/tradalia/core/auth"
-	"github.com/tradalia/data-collector/pkg/business"
-	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/data-collector/pkg/business"
+	"github.com/algotiqa/data-collector/pkg/db"
 	"gorm.io/gorm"
 )
 
@@ -110,7 +110,7 @@ func updateBiasAnalysis(c *auth.Context) {
 	err := c.BindParamsFromBody(&pds)
 
 	if err == nil {
-		id,err := c.GetIdFromUrl()
+		id, err := c.GetIdFromUrl()
 
 		if err == nil {
 			err = db.RunInTransaction(func(tx *gorm.DB) error {
@@ -268,7 +268,7 @@ func getBiasSummary(c *auth.Context) {
 		if err == nil {
 			err = business.GetBiasSummaryData(c, id, bsr)
 			if err == nil {
-				_=c.ReturnObject(bsr)
+				_ = c.ReturnObject(bsr)
 				return
 			}
 		}
@@ -299,7 +299,7 @@ func runBacktest(c *auth.Context) {
 			if err == nil {
 				err = business.RunBacktest(c, bbr)
 				if err == nil {
-					_=c.ReturnObject(bbr)
+					_ = c.ReturnObject(bbr)
 					return
 				}
 			}

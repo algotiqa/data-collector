@@ -32,9 +32,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/tradalia/core"
-	"github.com/tradalia/core/req"
-	"github.com/tradalia/data-collector/pkg/app"
+	"github.com/algotiqa/core"
+	"github.com/algotiqa/core/req"
+	"github.com/algotiqa/data-collector/pkg/app"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -52,14 +52,14 @@ type Formatter func(dp *DataPoint) any
 func InitDatastore(cfg *app.Datastore) {
 
 	slog.Info("Starting datastore...")
-	url := "postgres://"+ cfg.Username + ":" + cfg.Password + "@" + cfg.Address + "/" + cfg.Name
+	url := "postgres://" + cfg.Username + ":" + cfg.Password + "@" + cfg.Address + "/" + cfg.Name
 
 	p, err := pgxpool.New(context.Background(), url)
 	if err != nil {
-		core.ExitWithMessage("Failed to connect to the datastore: "+ err.Error())
+		core.ExitWithMessage("Failed to connect to the datastore: " + err.Error())
 	}
 
-	pool    = p
+	pool = p
 	staging = cfg.Staging
 }
 
@@ -69,7 +69,7 @@ func InitDatastore(cfg *app.Datastore) {
 //===
 //=============================================================================
 
-func OpenDatafile(filename string) (*os.File, error){
+func OpenDatafile(filename string) (*os.File, error) {
 	return os.Open(staging + string(os.PathSeparator) + filename)
 }
 
@@ -96,8 +96,8 @@ func SaveDatafile(part io.Reader) (string, int64, error) {
 			}
 		}
 
-		_= file.Close()
-		_= os.Remove(filename)
+		_ = file.Close()
+		_ = os.Remove(filename)
 	}
 
 	slog.Info("Error during datafile upload", "filename", filename, "error", err.Error())
@@ -120,8 +120,8 @@ func NewDataConfig(systemCode, symbol, timeframe string) *DataConfig {
 	return &DataConfig{
 		UserTable: false,
 		Timeframe: timeframe,
-		Selector : systemCode,
-		Symbol   : symbol,
+		Selector:  systemCode,
+		Symbol:    symbol,
 	}
 }
 
@@ -171,7 +171,7 @@ func SetDataPoints(points []*DataPoint, config *DataConfig) error {
 	for i := range points {
 		dp := points[i]
 		batch.Queue(query, dp.Time, config.Symbol, config.Selector, dp.Open, dp.High, dp.Low, dp.Close,
-					dp.UpVolume, dp.DownVolume, dp.UpTicks, dp.DownTicks, dp.OpenInterest)
+			dp.UpVolume, dp.DownVolume, dp.UpTicks, dp.DownTicks, dp.OpenInterest)
 	}
 
 	br := pool.SendBatch(context.Background(), batch)
@@ -222,9 +222,9 @@ func buildGetQuery(config *DataConfig) string {
 
 	table = table + config.Timeframe
 
-	query := 	"SELECT time, open, high, low, close, up_volume, down_volume, up_ticks, down_ticks, open_interest FROM "+ table +" "+
-				"WHERE symbol = $1 AND "+ field +" = $2 AND time >= $3 AND time <= $4 "+
-				"ORDER BY time"
+	query := "SELECT time, open, high, low, close, up_volume, down_volume, up_ticks, down_ticks, open_interest FROM " + table + " " +
+		"WHERE symbol = $1 AND " + field + " = $2 AND time >= $3 AND time <= $4 " +
+		"ORDER BY time"
 
 	return query
 }
@@ -242,18 +242,18 @@ func buildAddQuery(config *DataConfig) string {
 
 	table = table + config.Timeframe
 
-	query := 	"INSERT INTO "+ table +"(time, symbol, "+ field +", open, high, low, close, up_volume, down_volume, up_ticks, down_ticks, open_interest) " +
-				"VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) " +
-				"ON CONFLICT(time, symbol, "+ field +") DO UPDATE SET "+
-				"open=excluded.open,"+
-				"high=excluded.high,"+
-				"low=excluded.low,"+
-				"close=excluded.close,"+
-				"up_volume=excluded.up_volume,"+
-				"down_volume=excluded.down_volume,"+
-				"up_ticks=excluded.up_ticks,"+
-				"down_ticks=excluded.down_ticks,"+
-				"open_interest=excluded.open_interest"
+	query := "INSERT INTO " + table + "(time, symbol, " + field + ", open, high, low, close, up_volume, down_volume, up_ticks, down_ticks, open_interest) " +
+		"VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) " +
+		"ON CONFLICT(time, symbol, " + field + ") DO UPDATE SET " +
+		"open=excluded.open," +
+		"high=excluded.high," +
+		"low=excluded.low," +
+		"close=excluded.close," +
+		"up_volume=excluded.up_volume," +
+		"down_volume=excluded.down_volume," +
+		"up_ticks=excluded.up_ticks," +
+		"down_ticks=excluded.down_ticks," +
+		"open_interest=excluded.open_interest"
 
 	return query
 }
@@ -264,7 +264,7 @@ func saveAggregate(da *DataAggregator, config *DataConfig, timeframe string) err
 	var dataPoints []*DataPoint
 	config.Timeframe = timeframe
 
-	for _,dp := range da.DataPoints() {
+	for _, dp := range da.DataPoints() {
 		dataPoints = append(dataPoints, dp)
 
 		if len(dataPoints) == 8192 {

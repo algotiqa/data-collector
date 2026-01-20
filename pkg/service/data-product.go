@@ -30,10 +30,10 @@ import (
 	"mime/multipart"
 	"time"
 
-	"github.com/tradalia/core/auth"
-	"github.com/tradalia/data-collector/pkg/business"
-	"github.com/tradalia/data-collector/pkg/db"
-	"github.com/tradalia/data-collector/pkg/ds"
+	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/data-collector/pkg/business"
+	"github.com/algotiqa/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/ds"
 	"gorm.io/gorm"
 )
 
@@ -95,7 +95,7 @@ func uploadDataInstrumentData(c *auth.Context) {
 								dur := int(time.Now().Sub(start).Seconds())
 								_ = c.ReturnObject(&business.DatafileUploadResponse{
 									Duration: dur,
-									Bytes   : bytes,
+									Bytes:    bytes,
 								})
 								return
 							}
@@ -112,14 +112,14 @@ func uploadDataInstrumentData(c *auth.Context) {
 //=============================================================================
 
 func analyzeDataProduct(c *auth.Context) {
-	var result   *business.DataProductAnalysisResponse
-	var config   *business.DataConfig
+	var result *business.DataProductAnalysisResponse
+	var config *business.DataConfig
 	var backDays int
 
 	id, err := c.GetIdFromUrl()
 
 	if err == nil {
-		backDays,err = c.GetParamAsInt("backDays", 0)
+		backDays, err = c.GetParamAsInt("backDays", 0)
 		if err == nil {
 			err = db.RunInTransaction(func(tx *gorm.DB) error {
 				cfg, err := business.CreateDataConfigForProduct(c, tx, id)
@@ -129,14 +129,14 @@ func analyzeDataProduct(c *auth.Context) {
 
 			if err == nil {
 				spec := &business.DataProductAnalysisSpec{
-					Id      : id,
+					Id:       id,
 					BackDays: backDays,
-					Config  : config,
+					Config:   config,
 				}
 
 				result, err = business.AnalyzeProduct(c, spec)
 				if err == nil {
-					_=c.ReturnObject(result)
+					_ = c.ReturnObject(result)
 					return
 				}
 			}

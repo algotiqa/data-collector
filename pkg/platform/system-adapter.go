@@ -25,10 +25,10 @@ THE SOFTWARE.
 package platform
 
 import (
-	"github.com/tradalia/core"
-	"github.com/tradalia/core/auth"
-	"github.com/tradalia/core/datatype"
-	"github.com/tradalia/core/req"
+	"github.com/algotiqa/core"
+	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/core/datatype"
+	"github.com/algotiqa/core/req"
 	"strconv"
 )
 
@@ -55,17 +55,17 @@ func Init(p *core.Platform) {
 func GetInstruments(username string, connectionCode string, root string) ([]Instrument, error) {
 	var res InstrumentResponse
 
-	token,err := auth.Token()
+	token, err := auth.Token()
 	if err != nil {
 		return nil, err
 	}
 
-	client :=req.GetClient("bf")
-	url := platform.System +"/v1/connections/"+connectionCode+"/roots/"+ root +"/instruments"
+	client := req.GetClient("bf")
+	url := platform.System + "/v1/connections/" + connectionCode + "/roots/" + root + "/instruments"
 	err = req.DoGetOnBehalfOf(client, url, &res, token, username)
 
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	return res.Result, nil
@@ -76,17 +76,17 @@ func GetInstruments(username string, connectionCode string, root string) ([]Inst
 func GetPriceBars(username string, connectionCode string, symbol string, date datatype.IntDate) (*PriceBars, error) {
 	var res PriceBars
 
-	token,err := auth.Token()
+	token, err := auth.Token()
 	if err != nil {
 		return nil, err
 	}
 
-	client :=req.GetClient("bf")
-	url := platform.System +"/v1/connections/"+connectionCode+"/instruments/"+ symbol +"/bars?date="+strconv.Itoa(int(date))
+	client := req.GetClient("bf")
+	url := platform.System + "/v1/connections/" + connectionCode + "/instruments/" + symbol + "/bars?date=" + strconv.Itoa(int(date))
 	err = req.DoGetOnBehalfOf(client, url, &res, token, username)
 
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	return &res, nil

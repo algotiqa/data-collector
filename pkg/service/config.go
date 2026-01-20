@@ -25,15 +25,15 @@ THE SOFTWARE.
 package service
 
 import (
-	"github.com/tradalia/core/auth"
-	"github.com/tradalia/data-collector/pkg/core/messaging/file"
+	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/data-collector/pkg/core/messaging/file"
 )
 
 //=============================================================================
 
 func getParsers(c *auth.Context) {
 	res := file.GetParsers()
-	_= c.ReturnObject(res)
+	_ = c.ReturnObject(res)
 }
 
 //=============================================================================

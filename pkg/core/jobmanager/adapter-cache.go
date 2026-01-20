@@ -27,7 +27,7 @@ package jobmanager
 import (
 	"sync"
 
-	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/db"
 )
 
 //=============================================================================
@@ -45,8 +45,8 @@ type AdapterCache struct {
 
 func NewAdapterCache(systemCode string) *AdapterCache {
 	return &AdapterCache{
-		systemCode :  systemCode,
-		products   : make(map[string]*ProductCache),
+		systemCode:  systemCode,
+		products:    make(map[string]*ProductCache),
 		connections: make(map[string]*UserConnection),
 	}
 }
@@ -106,11 +106,11 @@ func (ac *AdapterCache) addScheduledJob(sj *ScheduledJob) {
 //=============================================================================
 
 func (ac *AdapterCache) setConnection(username, connCode string, connected bool) {
-	uc := newUserConnection(username,connCode,connected)
+	uc := newUserConnection(username, connCode, connected)
 
 	ac.Lock()
 
-	oldUc,found := ac.connections[uc.key()]
+	oldUc, found := ac.connections[uc.key()]
 	if !found {
 		ac.connections[uc.key()] = uc
 	} else {
@@ -152,7 +152,7 @@ func (ac *AdapterCache) schedule(maxJobs int, e Executor) int {
 	for _, uc := range ac.connections {
 		if maxJobs > 0 {
 			if !uc.isAllocated() && uc.connected {
-				idx,job := ac.getJobToRun()
+				idx, job := ac.getJobToRun()
 				if job != nil {
 					uc.allocateToJob(job)
 					if !e(ac, uc) {
@@ -160,9 +160,9 @@ func (ac *AdapterCache) schedule(maxJobs int, e Executor) int {
 						return 0
 					}
 
-					ac.runningJobs = append  (ac.runningJobs, job)
+					ac.runningJobs = append(ac.runningJobs, job)
 					ac.waitingJobs = removeAt(ac.waitingJobs, idx)
-					job.lastError  = nil
+					job.lastError = nil
 					maxJobs--
 				}
 			}
@@ -191,7 +191,7 @@ func (ac *AdapterCache) freeConnection(uc *UserConnection, enqueue bool) {
 
 //=============================================================================
 
-func (ac *AdapterCache) getJobToRun() (int,*ScheduledJob) {
+func (ac *AdapterCache) getJobToRun() (int, *ScheduledJob) {
 	var bestSj *ScheduledJob
 	var idx int
 
@@ -215,7 +215,7 @@ func (ac *AdapterCache) getJobToRun() (int,*ScheduledJob) {
 		}
 	}
 
-	return idx,bestSj
+	return idx, bestSj
 }
 
 //=============================================================================
@@ -234,7 +234,7 @@ func removeAt(s []*ScheduledJob, i int) []*ScheduledJob {
 func removeElem(s []*ScheduledJob, sj *ScheduledJob) []*ScheduledJob {
 	n := 0
 	for _, x := range s {
-		if x!=sj {
+		if x != sj {
 			s[n] = x
 			n++
 		}

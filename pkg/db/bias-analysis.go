@@ -25,7 +25,7 @@ THE SOFTWARE.
 package db
 
 import (
-	"github.com/tradalia/core/req"
+	"github.com/algotiqa/core/req"
 	"gorm.io/gorm"
 )
 
@@ -48,9 +48,9 @@ func GetBiasAnalysesFull(tx *gorm.DB, filter map[string]any, offset int, limit i
 	var list []BiasAnalysisFull
 	query :=
 		"SELECT ba.*, di.symbol as data_symbol, di.name as data_name, bp.symbol as broker_symbol, bp.name as broker_name " +
-		"FROM bias_analysis ba " +
-		"LEFT JOIN data_instrument di on ba.data_instrument_id = di.id " +
-		"LEFT JOIN broker_product bp on ba.broker_product_id = bp.id"
+			"FROM bias_analysis ba " +
+			"LEFT JOIN data_instrument di on ba.data_instrument_id = di.id " +
+			"LEFT JOIN broker_product bp on ba.broker_product_id = bp.id"
 
 	res := tx.Raw(query).Where(filter).Offset(offset).Limit(limit).Find(&list)
 

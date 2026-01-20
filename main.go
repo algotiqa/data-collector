@@ -25,18 +25,18 @@ THE SOFTWARE.
 package main
 
 import (
-	"github.com/tradalia/core/auth"
-	"github.com/tradalia/core/boot"
-	"github.com/tradalia/core/msg"
-	"github.com/tradalia/core/req"
-	"github.com/tradalia/data-collector/pkg/app"
-	"github.com/tradalia/data-collector/pkg/core/jobmanager"
-	"github.com/tradalia/data-collector/pkg/core/messaging"
-	"github.com/tradalia/data-collector/pkg/core/process"
-	"github.com/tradalia/data-collector/pkg/db"
-	"github.com/tradalia/data-collector/pkg/ds"
-	"github.com/tradalia/data-collector/pkg/platform"
-	"github.com/tradalia/data-collector/pkg/service"
+	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/core/boot"
+	"github.com/algotiqa/core/msg"
+	"github.com/algotiqa/core/req"
+	"github.com/algotiqa/data-collector/pkg/app"
+	"github.com/algotiqa/data-collector/pkg/core/jobmanager"
+	"github.com/algotiqa/data-collector/pkg/core/messaging"
+	"github.com/algotiqa/data-collector/pkg/core/process"
+	"github.com/algotiqa/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/ds"
+	"github.com/algotiqa/data-collector/pkg/platform"
+	"github.com/algotiqa/data-collector/pkg/service"
 	"log/slog"
 )
 
@@ -50,7 +50,7 @@ func main() {
 	cfg := &app.Config{}
 	boot.ReadConfig(component, cfg)
 	logger := boot.InitLogger(component, &cfg.Application)
-	engine := boot.InitEngine(logger,    &cfg.Application)
+	engine := boot.InitEngine(logger, &cfg.Application)
 	initClients()
 	db.InitDatabase(&cfg.Database)
 	ds.InitDatastore(&cfg.Datastore)

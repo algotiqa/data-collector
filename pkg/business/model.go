@@ -27,9 +27,9 @@ package business
 import (
 	"time"
 
-	"github.com/tradalia/data-collector/pkg/core"
-	"github.com/tradalia/data-collector/pkg/db"
-	"github.com/tradalia/data-collector/pkg/ds"
+	"github.com/algotiqa/data-collector/pkg/core"
+	"github.com/algotiqa/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/ds"
 )
 
 //=============================================================================
@@ -39,10 +39,10 @@ import (
 //=============================================================================
 
 type DatafileUploadSpec struct {
-	Symbol        string `json:"symbol"       binding:"required"`
-	Name          string `json:"name"         binding:"required"`
-	FileTimezone  string `json:"fileTimezone" binding:"required"`
-	Parser        string `json:"parser"       binding:"required"`
+	Symbol       string `json:"symbol"       binding:"required"`
+	Name         string `json:"name"         binding:"required"`
+	FileTimezone string `json:"fileTimezone" binding:"required"`
+	Parser       string `json:"parser"       binding:"required"`
 }
 
 //=============================================================================
@@ -68,7 +68,7 @@ type DataInstrumentDataSpec struct {
 //=============================================================================
 
 type DataInstrumentDataParams struct {
-	Location  *time.Location
+	Location   *time.Location
 	From       time.Time
 	To         time.Time
 	Reduction  int
@@ -102,48 +102,48 @@ type DataInstrumentExt struct {
 //=============================================================================
 
 type BiasAnalysisSpec struct {
-	DataInstrumentId  uint    `json:"dataInstrumentId"`
-	BrokerProductId   uint    `json:"brokerProductId"`
-	Name              string  `json:"name"`
-	Notes             string  `json:"notes"`
+	DataInstrumentId uint   `json:"dataInstrumentId"`
+	BrokerProductId  uint   `json:"brokerProductId"`
+	Name             string `json:"name"`
+	Notes            string `json:"notes"`
 }
 
 //=============================================================================
 
 type BiasAnalysisExt struct {
 	db.BiasAnalysis
-	DataInstrument db.DataInstrument  `json:"dataInstrument"`
-	BrokerProduct  db.BrokerProduct   `json:"brokerProduct"`
-	Configs        *[]*BiasConfig     `json:"configs"`
+	DataInstrument db.DataInstrument `json:"dataInstrument"`
+	BrokerProduct  db.BrokerProduct  `json:"brokerProduct"`
+	Configs        *[]*BiasConfig    `json:"configs"`
 }
 
 //=============================================================================
 
 type BiasConfigSpec struct {
-	StartDay        int16    `json:"startDay"`
-	StartSlot       int16    `json:"startSlot"`
-	EndDay          int16    `json:"endDay"`
-	EndSlot         int16    `json:"endSlot"`
-	Months          []bool   `json:"months"`
-	Excludes        []string `json:"excludes"`
-	Operation       int8     `json:"operation"`
-	GrossProfit     float64  `json:"grossProfit"`
-	NetProfit       float64  `json:"netProfit"`
+	StartDay    int16    `json:"startDay"`
+	StartSlot   int16    `json:"startSlot"`
+	EndDay      int16    `json:"endDay"`
+	EndSlot     int16    `json:"endSlot"`
+	Months      []bool   `json:"months"`
+	Excludes    []string `json:"excludes"`
+	Operation   int8     `json:"operation"`
+	GrossProfit float64  `json:"grossProfit"`
+	NetProfit   float64  `json:"netProfit"`
 }
 
 //-----------------------------------------------------------------------------
 
 func (bcs *BiasConfigSpec) ToBiasConfig() *db.BiasConfig {
 	var bc db.BiasConfig
-	bc.StartDay    = bcs.StartDay
-	bc.StartSlot   = bcs.StartSlot
-	bc.EndDay      = bcs.EndDay
-	bc.EndSlot     = bcs.EndSlot
-	bc.Months      = core.EncodeMonths(bcs.Months)
-	bc.Excludes    = core.EncodeExcludes(bcs.Excludes)
-	bc.Operation   = bcs.Operation
+	bc.StartDay = bcs.StartDay
+	bc.StartSlot = bcs.StartSlot
+	bc.EndDay = bcs.EndDay
+	bc.EndSlot = bcs.EndSlot
+	bc.Months = core.EncodeMonths(bcs.Months)
+	bc.Excludes = core.EncodeExcludes(bcs.Excludes)
+	bc.Operation = bcs.Operation
 	bc.GrossProfit = bcs.GrossProfit
-	bc.NetProfit   = bcs.NetProfit
+	bc.NetProfit = bcs.NetProfit
 
 	return &bc
 }
@@ -152,32 +152,32 @@ func (bcs *BiasConfigSpec) ToBiasConfig() *db.BiasConfig {
 
 type BiasConfig struct {
 	BiasConfigSpec
-	Id              uint `json:"id"`
-	BiasAnalysisId  uint `json:"biasAnalysisId"`
+	Id             uint `json:"id"`
+	BiasAnalysisId uint `json:"biasAnalysisId"`
 }
 
 //-----------------------------------------------------------------------------
 
 func (bc *BiasConfig) FromBiasConfig(dbc *db.BiasConfig) {
-	bc.Id             = dbc.Id
+	bc.Id = dbc.Id
 	bc.BiasAnalysisId = dbc.BiasAnalysisId
-	bc.StartDay       = dbc.StartDay
-	bc.StartSlot      = dbc.StartSlot
-	bc.EndDay         = dbc.EndDay
-	bc.EndSlot        = dbc.EndSlot
-	bc.Months         = core.DecodeMonths(dbc.Months)
-	bc.Excludes       = core.DecodeExcludes(dbc.Excludes)
-	bc.Operation      = dbc.Operation
-	bc.GrossProfit    = dbc.GrossProfit
-	bc.NetProfit      = dbc.NetProfit
+	bc.StartDay = dbc.StartDay
+	bc.StartSlot = dbc.StartSlot
+	bc.EndDay = dbc.EndDay
+	bc.EndSlot = dbc.EndSlot
+	bc.Months = core.DecodeMonths(dbc.Months)
+	bc.Excludes = core.DecodeExcludes(dbc.Excludes)
+	bc.Operation = dbc.Operation
+	bc.GrossProfit = dbc.GrossProfit
+	bc.NetProfit = dbc.NetProfit
 }
 
 //=============================================================================
 
 type DataConfig struct {
-	DataConfig         ds.DataConfig
-	Timezone           string
-	VirtualInstrument  bool
+	DataConfig        ds.DataConfig
+	Timezone          string
+	VirtualInstrument bool
 	Instruments       *[]db.DataInstrument
 }
 

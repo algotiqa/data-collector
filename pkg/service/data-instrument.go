@@ -25,22 +25,22 @@ THE SOFTWARE.
 package service
 
 import (
-	"github.com/tradalia/core/auth"
-	"github.com/tradalia/data-collector/pkg/business"
-	"github.com/tradalia/data-collector/pkg/core/jobmanager"
-	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/data-collector/pkg/business"
+	"github.com/algotiqa/data-collector/pkg/core/jobmanager"
+	"github.com/algotiqa/data-collector/pkg/db"
 	"gorm.io/gorm"
 )
 
 //=============================================================================
 
 func getDataInstruments(c *auth.Context) {
-	err:= db.RunInTransaction(func(tx *gorm.DB) error {
+	err := db.RunInTransaction(func(tx *gorm.DB) error {
 		list, err := business.GetDataInstruments(tx, c)
 
 		if err != nil {
-				return err
-			}
+			return err
+		}
 
 		return c.ReturnList(list, 0, len(*list), len(*list))
 	})
@@ -80,8 +80,8 @@ func getDataInstrumentData(c *auth.Context) {
 	var result *business.DataInstrumentDataResponse
 	var config *business.DataConfig
 
-	id, err   := c.GetIdFromUrl()
-	timeframe := c.GetParamAsString("timeframe",  "5m")
+	id, err := c.GetIdFromUrl()
+	timeframe := c.GetParamAsString("timeframe", "5m")
 
 	if err == nil {
 		err = db.RunInTransaction(func(tx *gorm.DB) error {
@@ -93,16 +93,16 @@ func getDataInstrumentData(c *auth.Context) {
 		if err == nil {
 			config.DataConfig.Timeframe = timeframe
 			spec := &business.DataInstrumentDataSpec{
-				Id       : id,
-				From     : c.GetParamAsString("from",     ""),
-				To       : c.GetParamAsString("to",       ""),
-				Timezone : c.GetParamAsString("timezone", "UTC"),
-				Reduction: c.GetParamAsString("reduction",""),
-				Config   : config,
+				Id:        id,
+				From:      c.GetParamAsString("from", ""),
+				To:        c.GetParamAsString("to", ""),
+				Timezone:  c.GetParamAsString("timezone", "UTC"),
+				Reduction: c.GetParamAsString("reduction", ""),
+				Config:    config,
 			}
 			result, err = business.GetDataInstrumentDataById(c, spec)
 			if err == nil {
-				_=c.ReturnObject(result)
+				_ = c.ReturnObject(result)
 				return
 			}
 		}
@@ -114,13 +114,13 @@ func getDataInstrumentData(c *auth.Context) {
 //=============================================================================
 
 func reloadDataInstrumentData(c *auth.Context) {
-	id,err := c.GetIdFromUrl()
+	id, err := c.GetIdFromUrl()
 
 	if err == nil {
 		var job *db.DownloadJob
 		var blk *db.DataBlock
 		err = db.RunInTransaction(func(tx *gorm.DB) error {
-			job,blk,err = business.ReloadDataInstrumentData(tx, c, id)
+			job, blk, err = business.ReloadDataInstrumentData(tx, c, id)
 			return err
 		})
 

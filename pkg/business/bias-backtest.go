@@ -28,10 +28,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/tradalia/core/auth"
-	"github.com/tradalia/data-collector/pkg/db"
-	"github.com/tradalia/data-collector/pkg/ds"
-	"github.com/tradalia/sick-engine/session"
+	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/ds"
+	"github.com/algotiqa/tiq-engine/session"
 	"gorm.io/gorm"
 )
 
@@ -42,18 +42,18 @@ import (
 //=============================================================================
 
 type BiasBacktestSpec struct {
-	StopLoss   float64                  `json:"stopLoss"`
-	TakeProfit float64                  `json:"takeProfit"`
-	Session    *session.TradingSession  `json:"session"`
+	StopLoss   float64                 `json:"stopLoss"`
+	TakeProfit float64                 `json:"takeProfit"`
+	Session    *session.TradingSession `json:"session"`
 }
 
 //=============================================================================
 
 type BiasBacktestResponse struct {
-	BiasAnalysis      *db.BiasAnalysis     `json:"biasAnalysis"`
-	BrokerProduct     *db.BrokerProduct    `json:"brokerProduct"`
-	Spec              *BiasBacktestSpec    `json:"spec"`
-	BacktestedConfigs []*BacktestedConfig  `json:"backtestedConfigs"`
+	BiasAnalysis      *db.BiasAnalysis    `json:"biasAnalysis"`
+	BrokerProduct     *db.BrokerProduct   `json:"brokerProduct"`
+	Spec              *BiasBacktestSpec   `json:"spec"`
+	BacktestedConfigs []*BacktestedConfig `json:"backtestedConfigs"`
 	config            *DataConfig
 }
 
@@ -71,7 +71,7 @@ func GetBacktestInfo(tx *gorm.DB, c *auth.Context, id uint, spec *BiasBacktestSp
 		return nil, err
 	}
 
-	biasConfigs,err2 := GetBiasConfigsByAnalysisId(tx, c, id)
+	biasConfigs, err2 := GetBiasConfigsByAnalysisId(tx, c, id)
 	if err2 != nil {
 		c.Log.Error("GetBacktestInfo: Could not retrieve bias configs", "error", err.Error())
 		return nil, err2
@@ -105,15 +105,15 @@ func GetBacktestInfo(tx *gorm.DB, c *auth.Context, id uint, spec *BiasBacktestSp
 
 	err = checkSpec(c, spec)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	return &BiasBacktestResponse{
-		BiasAnalysis     : ba,
-		BrokerProduct    : bp,
-		Spec             : spec,
+		BiasAnalysis:      ba,
+		BrokerProduct:     bp,
+		Spec:              spec,
 		BacktestedConfigs: btConfigs,
-		config           : config,
+		config:            config,
 	}, nil
 }
 
@@ -124,9 +124,9 @@ func RunBacktest(c *auth.Context, bbr *BiasBacktestResponse) error {
 
 	bbr.config.DataConfig.Timeframe = "15m"
 
-	loc,_:= time.LoadLocation(bbr.config.Timezone)
-	da   := ds.NewDataAggregator(ds.TimeSlotFunction30m, loc)
-	err  := ds.GetDataPoints(DefaultFrom, DefaultTo, &bbr.config.DataConfig, loc, da)
+	loc, _ := time.LoadLocation(bbr.config.Timezone)
+	da := ds.NewDataAggregator(ds.TimeSlotFunction30m, loc)
+	err := ds.GetDataPoints(DefaultFrom, DefaultTo, &bbr.config.DataConfig, loc, da)
 
 	if err != nil {
 		c.Log.Error("RunBacktest: Could not retrieve data points", "error", err.Error())
@@ -136,9 +136,9 @@ func RunBacktest(c *auth.Context, bbr *BiasBacktestResponse) error {
 	dataPoints := da.DataPoints()
 
 	for i, dp := range dataPoints {
-		if i>0 {
+		if i > 0 {
 			prevDp := dataPoints[i-1]
-			ti     := calcTimeInfo(dp)
+			ti := calcTimeInfo(dp)
 
 			for _, btc := range bbr.BacktestedConfigs {
 				btc.RunBacktest(ti, dp, prevDp, i, dataPoints)
@@ -185,16 +185,16 @@ func calcTimeInfo(dp *ds.DataPoint) *TimeInfo {
 
 	slotTime := dp.Time.Add(-time.Minute * 30)
 
-	year,month,_ := slotTime.Date()
-	hour,mins, _ := slotTime.Clock()
-	dow          := slotTime.Weekday()
-	slot         := (hour * 60 + mins) / 30
+	year, month, _ := slotTime.Date()
+	hour, mins, _ := slotTime.Clock()
+	dow := slotTime.Weekday()
+	slot := (hour*60 + mins) / 30
 
 	return &TimeInfo{
 		dayOfWeek: int16(dow),
-		slot     : int16(slot),
-		month    : int16(month),
-		year     : int16(year),
+		slot:      int16(slot),
+		month:     int16(month),
+		year:      int16(year),
 	}
 }
 

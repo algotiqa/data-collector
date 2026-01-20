@@ -30,9 +30,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/tradalia/core/msg"
-	"github.com/tradalia/data-collector/pkg/db"
-	"github.com/tradalia/data-collector/pkg/ds"
+	"github.com/algotiqa/core/msg"
+	"github.com/algotiqa/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/ds"
 	"gorm.io/gorm"
 )
 
@@ -42,7 +42,7 @@ func Recalc(job *RecalcJob) bool {
 	if job.DataProductId != 0 {
 		return recalcForProduct(job.DataProductId)
 	} else {
-		list,err := getProductsToRecalc(job.DataBlockId)
+		list, err := getProductsToRecalc(job.DataBlockId)
 		if err == nil {
 			for _, id := range *list {
 				ok := recalcForProduct(id)
@@ -58,20 +58,20 @@ func Recalc(job *RecalcJob) bool {
 
 //=============================================================================
 
-func getProductsToRecalc(blockId uint) (*[]uint,error) {
+func getProductsToRecalc(blockId uint) (*[]uint, error) {
 	var list *[]uint
 
 	err2 := db.RunInTransaction(func(tx *gorm.DB) error {
 		var err error
-		list,err = db.GetDataProductsByBlockId(tx, blockId)
+		list, err = db.GetDataProductsByBlockId(tx, blockId)
 		return err
 	})
 
 	if err2 != nil {
-		return nil,err2
+		return nil, err2
 	}
 
-	return list,nil
+	return list, nil
 }
 
 //=============================================================================
@@ -79,12 +79,12 @@ func getProductsToRecalc(blockId uint) (*[]uint,error) {
 func recalcForProduct(id uint) bool {
 	slog.Info("recalcForProduct: Starting rollover recalc", "dpId", id)
 
-	dp,instruments,err := getIntrumentSet(id)
+	dp, instruments, err := getIntrumentSet(id)
 	if err == nil {
 		var updated []*db.DataInstrumentExt
-		var curr,next *db.DataInstrumentExt
+		var curr, next *db.DataInstrumentExt
 
-		for i:=0; i<len(*instruments)-1; i++ {
+		for i := 0; i < len(*instruments)-1; i++ {
 			curr = &(*instruments)[i]
 			next = &(*instruments)[i+1]
 
@@ -92,9 +92,9 @@ func recalcForProduct(id uint) bool {
 
 			//--- Check if we have to calculate the rollover
 
-			shouldRecalc := curr.RolloverDate   == nil ||
-							curr.RolloverStatus == db.DIRollStatusNoData ||
-							curr.RolloverStatus == db.DIRollStatusNoMatch
+			shouldRecalc := curr.RolloverDate == nil ||
+				curr.RolloverStatus == db.DIRollStatusNoData ||
+				curr.RolloverStatus == db.DIRollStatusNoMatch
 
 			if shouldRecalc {
 				if *curr.Status == db.DBStatusReady {
@@ -103,7 +103,7 @@ func recalcForProduct(id uint) bool {
 					if *next.Status == db.DBStatusReady || *next.Status == db.DBStatusSleeping {
 						toUpdate, err = calcRollover(dp, curr, next, dp.RolloverTrigger)
 						if err != nil {
-							break;
+							break
 						}
 					} else if *next.Status == db.DBStatusEmpty {
 						toUpdate = setFakeRolloverDate(curr, dp)
@@ -136,36 +136,36 @@ func recalcForProduct(id uint) bool {
 
 //=============================================================================
 
-func getIntrumentSet(dpId uint) (*db.DataProduct,*[]db.DataInstrumentExt,error) {
-	var dp   *db.DataProduct
+func getIntrumentSet(dpId uint) (*db.DataProduct, *[]db.DataInstrumentExt, error) {
+	var dp *db.DataProduct
 	var list *[]db.DataInstrumentExt
 
 	err2 := db.RunInTransaction(func(tx *gorm.DB) error {
 		var err error
-		dp,err = db.GetDataProductById(tx, dpId)
+		dp, err = db.GetDataProductById(tx, dpId)
 		if err == nil {
 			if dp == nil {
-				err = errors.New("No data product found : "+ strconv.Itoa(int(dpId)))
+				err = errors.New("No data product found : " + strconv.Itoa(int(dpId)))
 			} else {
-				list,err = db.GetRollingDataInstrumentsByProductId(tx, dpId, dp.Months)
+				list, err = db.GetRollingDataInstrumentsByProductId(tx, dpId, dp.Months)
 			}
 		}
 		return err
 	})
 
 	if err2 != nil {
-		return nil,nil,err2
+		return nil, nil, err2
 	}
 
-	return dp,list,nil
+	return dp, list, nil
 }
 
 //=============================================================================
 
-func calcRollover(dp *db.DataProduct, curr, next *db.DataInstrumentExt, rollTrigger db.DPRollTrigger) (bool,error) {
+func calcRollover(dp *db.DataProduct, curr, next *db.DataInstrumentExt, rollTrigger db.DPRollTrigger) (bool, error) {
 	startRollDate := calcRolloverDate(*curr.ExpirationDate, rollTrigger)
 
-	if *next.Status == db.DBStatusSleeping && time.Now().Sub(startRollDate) <8*time.Hour {
+	if *next.Status == db.DBStatusSleeping && time.Now().Sub(startRollDate) < 8*time.Hour {
 		//--- If the startRollDate is within 8 hours behind now, let's skip
 		return false, nil
 	}
@@ -176,19 +176,19 @@ func calcRollover(dp *db.DataProduct, curr, next *db.DataInstrumentExt, rollTrig
 //=============================================================================
 
 func calcRolloverDelta(dp *db.DataProduct, curr, next *db.DataInstrumentExt, startRollDate time.Time) error {
-	prices1,err1 := getPrices(dp.SystemCode, curr.Symbol, startRollDate)
-	prices2,err2 := getPrices(dp.SystemCode, next.Symbol, startRollDate)
+	prices1, err1 := getPrices(dp.SystemCode, curr.Symbol, startRollDate)
+	prices2, err2 := getPrices(dp.SystemCode, next.Symbol, startRollDate)
 	if err1 != nil {
-		return errors.New("Failed to get prices from current: "+err1.Error())
+		return errors.New("Failed to get prices from current: " + err1.Error())
 	}
 	if err2 != nil {
-		return errors.New("Failed to get prices from next: "+err2.Error())
+		return errors.New("Failed to get prices from next: " + err2.Error())
 	}
 
 	currIdx := 0
 	nextIdx := 0
 
-	for currIdx<len(prices1) && nextIdx<len(prices2) {
+	for currIdx < len(prices1) && nextIdx < len(prices2) {
 		p1 := prices1[currIdx]
 		p2 := prices2[nextIdx]
 
@@ -200,8 +200,8 @@ func calcRolloverDelta(dp *db.DataProduct, curr, next *db.DataInstrumentExt, sta
 			nextIdx++
 		} else {
 			//--- Ok, found the same time. Now calc delta
-			curr.RolloverDate   = &p1.Time
-			curr.RolloverDelta  = p2.Close - p1.Close
+			curr.RolloverDate = &p1.Time
+			curr.RolloverDelta = p2.Close - p1.Close
 			curr.RolloverStatus = db.DIRollStatusReady
 			return nil
 		}
@@ -210,25 +210,25 @@ func calcRolloverDelta(dp *db.DataProduct, curr, next *db.DataInstrumentExt, sta
 	slog.Error("calcRolloverDelta: Cannot find any rollover delta", "dpId", dp.Id, "currId", curr.Id, "nextId", next.Id, "startRollDate", startRollDate)
 
 	curr.RolloverStatus = db.DIRollStatusNoMatch
-	curr.RolloverDelta  = 0
-	curr.RolloverDate   = &startRollDate
+	curr.RolloverDelta = 0
+	curr.RolloverDate = &startRollDate
 
 	return nil
 }
 
 //=============================================================================
 
-func getPrices(systemCode, symbol string, from time.Time) ([]*ds.DataPoint, error){
-	config := ds.NewDataConfig(systemCode, symbol,"60m")
-	da     := ds.NewDataAggregator(nil,nil)
-	to     := from.Add(5 * 24 * time.Hour)
+func getPrices(systemCode, symbol string, from time.Time) ([]*ds.DataPoint, error) {
+	config := ds.NewDataConfig(systemCode, symbol, "60m")
+	da := ds.NewDataAggregator(nil, nil)
+	to := from.Add(5 * 24 * time.Hour)
 
-	err    := ds.GetDataPoints(from, to, config, time.UTC, da)
+	err := ds.GetDataPoints(from, to, config, time.UTC, da)
 	if err != nil {
 		return nil, err
 	}
 
-	return da.DataPoints(),nil
+	return da.DataPoints(), nil
 }
 
 //=============================================================================
@@ -278,9 +278,9 @@ func convertInstrument(die *db.DataInstrumentExt) *db.DataInstrument {
 //=============================================================================
 
 func setFakeRolloverDate(die *db.DataInstrumentExt, dp *db.DataProduct) bool {
-	rollDate          := calcRolloverDate(*die.ExpirationDate, dp.RolloverTrigger)
-	die.RolloverDate   = &rollDate
-	die.RolloverDelta  = 0
+	rollDate := calcRolloverDate(*die.ExpirationDate, dp.RolloverTrigger)
+	die.RolloverDate = &rollDate
+	die.RolloverDelta = 0
 	die.RolloverStatus = db.DIRollStatusNoData
 
 	return true
@@ -314,10 +314,10 @@ func recalcVirtualInstrumentStatus(dp *db.DataProduct, instruments *[]db.DataIns
 
 	err := db.RunInTransaction(func(tx *gorm.DB) error {
 		var err error
-		vi,err=db.GetVirtualDataInstrumentByProductId(tx, dp.Id)
+		vi, err = db.GetVirtualDataInstrumentByProductId(tx, dp.Id)
 		if err == nil {
 			if vi == nil {
-				return errors.New("Cannot find Virtual Data instrument for product with id: "+ strconv.Itoa(int(dp.Id)))
+				return errors.New("Cannot find Virtual Data instrument for product with id: " + strconv.Itoa(int(dp.Id)))
 			}
 			err = sendEventToUser(dp, instruments, emptyDie, noMatchDie, vi)
 			if err == nil {
@@ -342,8 +342,8 @@ func sendEventToUser(dp *db.DataProduct, instruments *[]db.DataInstrumentExt, em
 	if empty == nil && noMatch == nil {
 		vi.RolloverStatus = db.DIRollStatusReady
 		return msg.SendEventByCode(dp.Username, "dc.dataProduct.ready", map[string]interface{}{
-			"root"       : dp.Symbol,
-			"virtual"    : vi.Symbol,
+			"root":        dp.Symbol,
+			"virtual":     vi.Symbol,
 			"instruments": len(*instruments),
 		})
 	}
@@ -351,17 +351,17 @@ func sendEventToUser(dp *db.DataProduct, instruments *[]db.DataInstrumentExt, em
 	if empty != nil {
 		vi.RolloverStatus = db.DIRollStatusNoData
 		return msg.SendEventByCode(dp.Username, "dc.dataProduct.readyEmpty", map[string]interface{}{
-			"root"   : dp.Symbol,
-			"symbol" : empty.Symbol,
+			"root":    dp.Symbol,
+			"symbol":  empty.Symbol,
 			"virtual": vi.Symbol,
 		})
 	}
 
 	vi.RolloverStatus = db.DIRollStatusNoMatch
 	return msg.SendEventByCode(dp.Username, "dc.dataProduct.readyNoMatch", map[string]interface{}{
-		"root"  : dp.Symbol,
-		"symbol": noMatch.Symbol,
-		"system": dp.SystemCode,
+		"root":    dp.Symbol,
+		"symbol":  noMatch.Symbol,
+		"system":  dp.SystemCode,
 		"virtual": vi.Symbol,
 	})
 }

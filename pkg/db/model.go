@@ -27,7 +27,7 @@ package db
 import (
 	"time"
 
-	"github.com/tradalia/core/datatype"
+	"github.com/algotiqa/core/datatype"
 )
 
 //=============================================================================
@@ -83,8 +83,8 @@ type DataProduct struct {
 type DIRollStatus int
 
 const (
-	DIRollStatusWaiting DIRollStatus =  0
-	DIRollStatusReady   DIRollStatus =  1
+	DIRollStatusWaiting DIRollStatus = 0
+	DIRollStatusReady   DIRollStatus = 1
 	DIRollStatusNoMatch DIRollStatus = -1
 	DIRollStatusNoData  DIRollStatus = -2
 )
@@ -94,11 +94,11 @@ const (
 type DataInstrument struct {
 	Id                uint         `json:"id" gorm:"primaryKey"`
 	DataProductId     uint         `json:"dataProductId"`
-	DataBlockId      *uint         `json:"dataBlockId"`
+	DataBlockId       *uint        `json:"dataBlockId"`
 	Symbol            string       `json:"symbol"`
 	Name              string       `json:"name"`
-	ExpirationDate   *time.Time    `json:"expirationDate,omitempty"`
-	RolloverDate     *time.Time    `json:"rolloverDate,omitempty"`
+	ExpirationDate    *time.Time   `json:"expirationDate,omitempty"`
+	RolloverDate      *time.Time   `json:"rolloverDate,omitempty"`
 	Continuous        bool         `json:"continuous"`
 	Month             string       `json:"month"`
 	RolloverDelta     float64      `json:"rolloverDelta"`
@@ -119,13 +119,13 @@ type DataInstrumentFull struct {
 
 type DataInstrumentExt struct {
 	DataInstrument
-	Status    *DBStatus         `json:"status"`
+	Status     *DBStatus        `json:"status"`
 	DataFrom   datatype.IntDate `json:"dataFrom"`
 	DataTo     datatype.IntDate `json:"dataTo"`
-	Progress  *int8             `json:"progress"`
+	Progress   *int8            `json:"progress"`
 	Global     bool             `json:"global"`
 	DjPriority int              `json:"djPriority"`
-	DjStatus  *DJStatus         `json:"djStatus"`
+	DjStatus   *DJStatus        `json:"djStatus"`
 	DjLoadFrom datatype.IntDate `json:"djLoadFrom"`
 	DjLoadTo   datatype.IntDate `json:"djLoadTo"`
 	DjCurrDay  int              `json:"djCurrDay"`
@@ -144,41 +144,41 @@ type DataInstrumentExt struct {
 type DBStatus int
 
 const (
-	DBStatusWaiting    =  1
-	DBStatusLoading    =  2
-	DBStatusProcessing =  3
-	DBStatusSleeping   =  4
-	DBStatusEmpty      =  5
-	DBStatusReady      =  0
+	DBStatusWaiting    = 1
+	DBStatusLoading    = 2
+	DBStatusProcessing = 3
+	DBStatusSleeping   = 4
+	DBStatusEmpty      = 5
+	DBStatusReady      = 0
 	DBStatusError      = -1
 )
 
 //-----------------------------------------------------------------------------
 
 type DataBlock struct {
-	Id             uint             `json:"id" gorm:"primaryKey"`
-	SystemCode     string           `json:"systemCode"`
-	Root           string           `json:"root"`
-	Symbol         string           `json:"symbol"`
-	Status         DBStatus         `json:"status"`
-	Global         bool             `json:"global"`
-	DataFrom       datatype.IntDate `json:"dataFrom"`
-	DataTo         datatype.IntDate `json:"dataTo"`
-	Progress       int8             `json:"progress"`
+	Id         uint             `json:"id" gorm:"primaryKey"`
+	SystemCode string           `json:"systemCode"`
+	Root       string           `json:"root"`
+	Symbol     string           `json:"symbol"`
+	Status     DBStatus         `json:"status"`
+	Global     bool             `json:"global"`
+	DataFrom   datatype.IntDate `json:"dataFrom"`
+	DataTo     datatype.IntDate `json:"dataTo"`
+	Progress   int8             `json:"progress"`
 }
 
 //=============================================================================
 
 type IngestionJob struct {
-	Id                uint    `json:"id" gorm:"primaryKey"`
-	DataInstrumentId  uint    `json:"dataInstrumentId"`
-	DataBlockId       uint    `json:"dataBlockId"`
-	Filename          string  `json:"filename"`
-	Records           int     `json:"records"`
-	Bytes             int64   `json:"bytes"`
-	Timezone          string  `json:"timezone"`
-	Parser            string  `json:"parser"`
-	Error             string  `json:"error"`
+	Id               uint   `json:"id" gorm:"primaryKey"`
+	DataInstrumentId uint   `json:"dataInstrumentId"`
+	DataBlockId      uint   `json:"dataBlockId"`
+	Filename         string `json:"filename"`
+	Records          int    `json:"records"`
+	Bytes            int64  `json:"bytes"`
+	Timezone         string `json:"timezone"`
+	Parser           string `json:"parser"`
+	Error            string `json:"error"`
 }
 
 //=============================================================================
@@ -186,26 +186,26 @@ type IngestionJob struct {
 type DJStatus int
 
 const (
-	DJStatusWaiting    DJStatus =  0
-	DJStatusRunning    DJStatus =  1
-	DJStatusError      DJStatus = -1
+	DJStatusWaiting DJStatus = 0
+	DJStatusRunning DJStatus = 1
+	DJStatusError   DJStatus = -1
 )
 
 //-----------------------------------------------------------------------------
 
 type DownloadJob struct {
-	Id                uint             `json:"id" gorm:"primaryKey"`
-	DataInstrumentId  uint             `json:"dataInstrumentId"`
-	DataBlockId       uint             `json:"dataBlockId"`
-	Status            DJStatus         `json:"status"`
-	LoadFrom          datatype.IntDate `json:"loadFrom"`
-	LoadTo            datatype.IntDate `json:"loadTo"`
-	Priority          int              `json:"priority"`
-	UserConnection    string           `json:"userConnection"`
-	ProductTimezone   string           `json:"productTimezone"`
-	CurrDay           int              `json:"currDay"`
-	TotDays           int              `json:"totDays"`
-	Error             string           `json:"error"`
+	Id               uint             `json:"id" gorm:"primaryKey"`
+	DataInstrumentId uint             `json:"dataInstrumentId"`
+	DataBlockId      uint             `json:"dataBlockId"`
+	Status           DJStatus         `json:"status"`
+	LoadFrom         datatype.IntDate `json:"loadFrom"`
+	LoadTo           datatype.IntDate `json:"loadTo"`
+	Priority         int              `json:"priority"`
+	UserConnection   string           `json:"userConnection"`
+	ProductTimezone  string           `json:"productTimezone"`
+	CurrDay          int              `json:"currDay"`
+	TotDays          int              `json:"totDays"`
+	Error            string           `json:"error"`
 }
 
 //=============================================================================
@@ -233,37 +233,37 @@ type BrokerProduct struct {
 
 type BiasAnalysis struct {
 	Common
-	Username          string  `json:"username"`
-	DataInstrumentId  uint    `json:"dataInstrumentId"`
-	BrokerProductId   uint    `json:"brokerProductId"`
-	Name              string  `json:"name"`
-	Notes             string  `json:"notes"`
+	Username         string `json:"username"`
+	DataInstrumentId uint   `json:"dataInstrumentId"`
+	BrokerProductId  uint   `json:"brokerProductId"`
+	Name             string `json:"name"`
+	Notes            string `json:"notes"`
 }
 
 //=============================================================================
 
 type BiasAnalysisFull struct {
 	BiasAnalysis
-	DataSymbol     string  `json:"dataSymbol"`
-	DataName       string  `json:"dataName"`
-	BrokerSymbol   string  `json:"brokerSymbol"`
-	BrokerName     string  `json:"brokerName"`
+	DataSymbol   string `json:"dataSymbol"`
+	DataName     string `json:"dataName"`
+	BrokerSymbol string `json:"brokerSymbol"`
+	BrokerName   string `json:"brokerName"`
 }
 
 //=============================================================================
 
 type BiasConfig struct {
-	Id              uint    `json:"id" gorm:"primaryKey"`
-	BiasAnalysisId  uint    `json:"biasAnalysisId"`
-	StartDay        int16   `json:"startDay"`
-	StartSlot       int16   `json:"startSlot"`
-	EndDay          int16   `json:"endDay"`
-	EndSlot         int16   `json:"endSlot"`
-	Months          int16   `json:"months"`
-	Excludes        string  `json:"excludes"`
-	Operation       int8    `json:"operation"`
-	GrossProfit     float64 `json:"grossProfit"`
-	NetProfit       float64 `json:"netProfit"`
+	Id             uint    `json:"id" gorm:"primaryKey"`
+	BiasAnalysisId uint    `json:"biasAnalysisId"`
+	StartDay       int16   `json:"startDay"`
+	StartSlot      int16   `json:"startSlot"`
+	EndDay         int16   `json:"endDay"`
+	EndSlot        int16   `json:"endSlot"`
+	Months         int16   `json:"months"`
+	Excludes       string  `json:"excludes"`
+	Operation      int8    `json:"operation"`
+	GrossProfit    float64 `json:"grossProfit"`
+	NetProfit      float64 `json:"netProfit"`
 }
 
 //=============================================================================
@@ -272,13 +272,13 @@ type BiasConfig struct {
 //===
 //=============================================================================
 
-func (DataProduct)    TableName() string { return "data_product"    }
+func (DataProduct) TableName() string    { return "data_product" }
 func (DataInstrument) TableName() string { return "data_instrument" }
-func (DataBlock)      TableName() string { return "data_block"      }
-func (BrokerProduct)  TableName() string { return "broker_product"  }
-func (IngestionJob)   TableName() string { return "ingestion_job"   }
-func (DownloadJob)    TableName() string { return "download_job"    }
-func (BiasAnalysis)   TableName() string { return "bias_analysis"   }
-func (BiasConfig)     TableName() string { return "bias_config"     }
+func (DataBlock) TableName() string      { return "data_block" }
+func (BrokerProduct) TableName() string  { return "broker_product" }
+func (IngestionJob) TableName() string   { return "ingestion_job" }
+func (DownloadJob) TableName() string    { return "download_job" }
+func (BiasAnalysis) TableName() string   { return "bias_analysis" }
+func (BiasConfig) TableName() string     { return "bias_config" }
 
 //=============================================================================

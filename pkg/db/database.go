@@ -25,7 +25,7 @@ THE SOFTWARE.
 package db
 
 import (
-	"github.com/tradalia/core"
+	"github.com/algotiqa/core"
 	"gorm.io/driver/mysql"
 	"log/slog"
 	"time"
@@ -55,7 +55,7 @@ func InitDatabase(cfg *core.Database) {
 
 	db, err := gorm.Open(dialector, &gorm.Config{})
 	if err != nil {
-		core.ExitWithMessage("Failed to connect to the database: "+ err.Error())
+		core.ExitWithMessage("Failed to connect to the database: " + err.Error())
 	}
 
 	sqlDB, err := db.DB()

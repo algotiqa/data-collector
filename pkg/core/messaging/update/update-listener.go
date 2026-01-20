@@ -28,9 +28,9 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/tradalia/core/msg"
-	"github.com/tradalia/data-collector/pkg/core/jobmanager"
-	"github.com/tradalia/data-collector/pkg/db"
+	"github.com/algotiqa/core/msg"
+	"github.com/algotiqa/data-collector/pkg/core/jobmanager"
+	"github.com/algotiqa/data-collector/pkg/db"
 	"gorm.io/gorm"
 )
 
@@ -38,7 +38,7 @@ import (
 
 func HandleUpdateMessage(m *msg.Message) bool {
 
-	slog.Info("HandleUpdateMessage: New message received", "source", m.Source,  "type", m.Type)
+	slog.Info("HandleUpdateMessage: New message received", "source", m.Source, "type", m.Type)
 
 	if m.Source == msg.SourceDataProduct {
 		dpm := DataProductMessage{}
@@ -77,19 +77,19 @@ func HandleUpdateMessage(m *msg.Message) bool {
 func addDataProduct(dpm *DataProductMessage) bool {
 	slog.Info("addDataProduct: Data product change received", "id", dpm.DataProduct.Id)
 
-	pd  := &db.DataProduct{}
+	pd := &db.DataProduct{}
 	err := db.RunInTransaction(func(tx *gorm.DB) error {
-		pd.Id                   = dpm.DataProduct.Id
-		pd.Symbol               = dpm.DataProduct.Symbol
-		pd.Username             = dpm.DataProduct.Username
-		pd.SystemCode           = dpm.Connection.SystemCode
-		pd.ConnectionCode       = dpm.Connection.Code
-		pd.Connected            = dpm.Connection.Connected
+		pd.Id = dpm.DataProduct.Id
+		pd.Symbol = dpm.DataProduct.Symbol
+		pd.Username = dpm.DataProduct.Username
+		pd.SystemCode = dpm.Connection.SystemCode
+		pd.ConnectionCode = dpm.Connection.Code
+		pd.Connected = dpm.Connection.Connected
 		pd.SupportsMultipleData = dpm.Connection.SupportsMultipleData
-		pd.Timezone             = dpm.Exchange.Timezone
-		pd.Months               = dpm.DataProduct.Months
-		pd.RolloverTrigger      = dpm.DataProduct.RolloverTrigger
-		pd.Status               = db.DPStatusReady
+		pd.Timezone = dpm.Exchange.Timezone
+		pd.Months = dpm.DataProduct.Months
+		pd.RolloverTrigger = dpm.DataProduct.RolloverTrigger
+		pd.Status = db.DPStatusReady
 
 		if !pd.SupportsMultipleData {
 			pd.Status = db.DPStatusFetchingInventory
@@ -121,14 +121,14 @@ func setBrokerProduct(bpm *BrokerProductMessage) bool {
 	err := db.RunInTransaction(func(tx *gorm.DB) error {
 		bp := &db.BrokerProduct{}
 
-		bp.Id               = bpm.BrokerProduct.Id
-		bp.Username         = bpm.BrokerProduct.Username
-		bp.ConnectionCode   = bpm.Connection.Code
-		bp.Symbol           = bpm.BrokerProduct.Symbol
-		bp.Name             = bpm.BrokerProduct.Name
-		bp.PointValue       = bpm.BrokerProduct.PointValue
+		bp.Id = bpm.BrokerProduct.Id
+		bp.Username = bpm.BrokerProduct.Username
+		bp.ConnectionCode = bpm.Connection.Code
+		bp.Symbol = bpm.BrokerProduct.Symbol
+		bp.Name = bpm.BrokerProduct.Name
+		bp.PointValue = bpm.BrokerProduct.PointValue
 		bp.CostPerOperation = bpm.BrokerProduct.CostPerOperation
-		bp.CurrencyCode     = bpm.Currency.Code
+		bp.CurrencyCode = bpm.Currency.Code
 
 		return db.UpdateBrokerProduct(tx, bp)
 	})

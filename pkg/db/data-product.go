@@ -25,7 +25,7 @@ THE SOFTWARE.
 package db
 
 import (
-	"github.com/tradalia/core/req"
+	"github.com/algotiqa/core/req"
 	"gorm.io/gorm"
 )
 
@@ -85,7 +85,7 @@ func SetConnectionStatus(tx *gorm.DB, user, code string, flag bool) error {
 
 func UpdateDataProductFields(tx *gorm.DB, id uint, status DPStatus) error {
 	fields := map[string]interface{}{
-		"status" : status,
+		"status": status,
 	}
 
 	return tx.Model(&DataProduct{}).

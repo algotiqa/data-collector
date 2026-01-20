@@ -28,22 +28,21 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/tradalia/data-collector/pkg/db"
-	"github.com/tradalia/data-collector/pkg/ds"
-	"github.com/tradalia/data-collector/pkg/platform"
+	"github.com/algotiqa/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/ds"
+	"github.com/algotiqa/data-collector/pkg/platform"
 )
 
 //=============================================================================
 
 type InstrumentDownLoadJob struct {
-
 }
 
 //=============================================================================
 
 func (i *InstrumentDownLoadJob) execute(jc *JobContext) error {
-	uc  := jc.userConnection
-	sj  := uc.scheduledJob
+	uc := jc.userConnection
+	sj := uc.scheduledJob
 	blk := sj.block
 	job := sj.job
 
@@ -70,7 +69,7 @@ func (i *InstrumentDownLoadJob) execute(jc *JobContext) error {
 //=============================================================================
 
 func processDay(jc *JobContext, uc *UserConnection, blk *db.DataBlock, job *db.DownloadJob) error {
-	bars,err := platform.GetPriceBars(uc.username, uc.connectionCode, blk.Symbol, job.LoadFrom)
+	bars, err := platform.GetPriceBars(uc.username, uc.connectionCode, blk.Symbol, job.LoadFrom)
 	if err == nil {
 		job.CurrDay++
 
@@ -96,22 +95,22 @@ func storeBars(blk *db.DataBlock, bars []*platform.PriceBar) error {
 
 	config := &ds.DataConfig{
 		UserTable: false,
-		Selector : blk.SystemCode,
+		Selector:  blk.SystemCode,
 		Timeframe: "1m",
-		Symbol   : blk.Symbol,
+		Symbol:    blk.Symbol,
 	}
 
 	for _, bar := range bars {
 		dp := &ds.DataPoint{
-			Time        : bar.TimeStamp,
-			Open        : bar.Open,
-			High        : bar.High,
-			Low         : bar.Low,
-			Close       : bar.Close,
-			UpVolume    : bar.UpVolume,
-			DownVolume  : bar.DownVolume,
-			UpTicks     : bar.UpTicks,
-			DownTicks   : bar.DownTicks,
+			Time:         bar.TimeStamp,
+			Open:         bar.Open,
+			High:         bar.High,
+			Low:          bar.Low,
+			Close:        bar.Close,
+			UpVolume:     bar.UpVolume,
+			DownVolume:   bar.DownVolume,
+			UpTicks:      bar.UpTicks,
+			DownTicks:    bar.DownTicks,
 			OpenInterest: bar.OpenInterest,
 		}
 
@@ -139,7 +138,7 @@ func updateStatus(jc *JobContext, blk *db.DataBlock, job *db.DownloadJob) error 
 		blk.DataTo = job.LoadFrom
 	}
 
-	blk.Progress = min(int8(job.CurrDay * 100 / job.TotDays), 100)
+	blk.Progress = min(int8(job.CurrDay*100/job.TotDays), 100)
 
 	return jc.UpdateJob(db.DBStatusLoading, db.DJStatusRunning, "", false)
 }

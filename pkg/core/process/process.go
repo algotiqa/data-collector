@@ -25,8 +25,8 @@ THE SOFTWARE.
 package process
 
 import (
-	"github.com/tradalia/data-collector/pkg/app"
-	"github.com/tradalia/data-collector/pkg/core/process/invloader"
+	"github.com/algotiqa/data-collector/pkg/app"
+	"github.com/algotiqa/data-collector/pkg/core/process/invloader"
 )
 
 //=============================================================================

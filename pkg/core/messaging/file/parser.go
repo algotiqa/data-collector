@@ -27,7 +27,7 @@ package file
 import (
 	"errors"
 
-	"github.com/tradalia/core/datatype"
+	"github.com/algotiqa/core/datatype"
 )
 
 //=============================================================================
@@ -62,10 +62,11 @@ func GetParsers() map[string]string {
 
 func NewParser(code string) (Parser, error) {
 	switch code {
-		case TradestationCode: return &TradestationParser{}, nil
+	case TradestationCode:
+		return &TradestationParser{}, nil
 	}
 
-	return nil, errors.New("Unknown parser type : "+ code)
+	return nil, errors.New("Unknown parser type : " + code)
 }
 
 //=============================================================================

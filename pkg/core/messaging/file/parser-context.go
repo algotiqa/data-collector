@@ -28,8 +28,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/tradalia/data-collector/pkg/db"
-	"github.com/tradalia/data-collector/pkg/ds"
+	"github.com/algotiqa/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/ds"
 	"gorm.io/gorm"
 )
 
@@ -59,16 +59,16 @@ type ParserContext struct {
 
 func NewParserContext(file io.Reader, config *ds.DataConfig, fileLoc *time.Location, job *db.IngestionJob, b *db.DataBlock, prLoc *time.Location) *ParserContext {
 	c := &ParserContext{
-		Reader         : file,
-		Config         : config,
-		FileLocation   : fileLoc,
+		Reader:          file,
+		Config:          config,
+		FileLocation:    fileLoc,
 		ProductLocation: prLoc,
-		Job            : job,
-		Block          : b,
+		Job:             job,
+		Block:           b,
 	}
 
 	c.dataPoints = []*ds.DataPoint{}
-	c.DataRange  = &DataRange{}
+	c.DataRange = &DataRange{}
 	c.DataAggreg = ds.NewDataAggregator(ds.TimeSlotFunction5m, prLoc)
 
 	return c
@@ -85,7 +85,7 @@ func (c *ParserContext) SaveDataPoint(dp *ds.DataPoint, bytes int) error {
 	c.Job.Records++
 	c.currBytes += int64(bytes)
 
-	if c.Job.Records % 8192 == 0 {
+	if c.Job.Records%8192 == 0 {
 		if err := ds.SetDataPoints(c.dataPoints, c.Config); err != nil {
 			return err
 		}
