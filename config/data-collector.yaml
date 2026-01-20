@@ -5,8 +5,8 @@ application:
 database:
   address: localhost:3402
   name: collector
-  username: tradalia
-  password: tradalia
+  username: admin
+  password: admin
 authentication:
   authority: https://algotiqa-server:8443/auth/realms/algotiqa
   clientId: algotiqa-backend
@@ -15,11 +15,11 @@ platform:
   system: https://algotiqa-server:8449/api/system
 messaging:
   address: localhost:8450
-  username: rabbit-admin
-  password: rabbit.admin
+  username: admin
+  password: admin
 datastore:
   address: localhost:3410
   name: datastore
-  username: tradalia
-  password: tradalia
+  username: admin
+  password: admin
   staging:  staging
