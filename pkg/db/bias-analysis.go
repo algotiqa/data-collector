@@ -46,13 +46,13 @@ func GetBiasAnalyses(tx *gorm.DB, filter map[string]any, offset int, limit int) 
 
 func GetBiasAnalysesFull(tx *gorm.DB, filter map[string]any, offset int, limit int) (*[]BiasAnalysisFull, error) {
 	var list []BiasAnalysisFull
-	query :=
-		"SELECT ba.*, di.symbol as data_symbol, di.name as data_name, bp.symbol as broker_symbol, bp.name as broker_name " +
-			"FROM bias_analysis ba " +
-			"LEFT JOIN data_instrument di on ba.data_instrument_id = di.id " +
-			"LEFT JOIN broker_product bp on ba.broker_product_id = bp.id"
 
-	res := tx.Raw(query).Where(filter).Offset(offset).Limit(limit).Find(&list)
+	res := tx.Model(&BiasAnalysis{}).Select("bias_analysis.*, " +
+		"data_instrument.symbol as data_symbol, data_instrument.name as data_name," +
+		"broker_product.symbol as broker_symbol, broker_product.name as broker_name").
+		Joins("LEFT JOIN data_instrument ON bias_analysis.data_instrument_id = data_instrument.id").
+		Joins("LEFT JOIN broker_product  ON bias_analysis.broker_product_id  = broker_product.id").
+		Where(filter).Offset(offset).Limit(limit).Find(&list)
 
 	if res.Error != nil {
 		return nil, req.NewServerErrorByError(res.Error)
