@@ -34,7 +34,9 @@ import (
 //=============================================================================
 
 const (
-	MaxJobs = 4
+	//--- Value MaxJobs=4 causes TS to raise a "429:Too many requests" error
+
+	MaxJobs = 1
 )
 
 type Executor func(ac *AdapterCache, uc *UserConnection) bool
