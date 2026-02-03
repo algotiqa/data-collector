@@ -25,6 +25,7 @@ THE SOFTWARE.
 package jobmanager
 
 import (
+	"errors"
 	"log/slog"
 	"time"
 
@@ -49,12 +50,12 @@ func (i *InstrumentDownLoadJob) execute(jc *JobContext) error {
 	slog.Info("DownloadJob: Starting job", "systemCode", blk.SystemCode, "root", blk.Root, "symbol", blk.Symbol, "jobId", job.Id, "resuming", jc.resuming)
 
 	for job.LoadFrom <= job.LoadTo {
-		err := processDay(jc, uc, blk, job)
+		days, err := processDays(jc, uc, blk, job)
 		if err != nil {
 			return err
 		}
 
-		job.LoadFrom = job.LoadFrom.AddDays(1)
+		job.LoadFrom = job.LoadFrom.AddDays(days)
 
 		if job.LoadFrom.IsToday(time.UTC) {
 			jc.GoToSleep()
@@ -68,20 +69,28 @@ func (i *InstrumentDownLoadJob) execute(jc *JobContext) error {
 
 //=============================================================================
 
-func processDay(jc *JobContext, uc *UserConnection, blk *db.DataBlock, job *db.DownloadJob) error {
+func processDays(jc *JobContext, uc *UserConnection, blk *db.DataBlock, job *db.DownloadJob) (int, error) {
 	bars, err := platform.GetPriceBars(uc.username, uc.connectionCode, blk.Symbol, job.LoadFrom)
 	if err == nil {
-		job.CurrDay++
+		if bars.Timeout {
+			err = errors.New("Timeout")
+		} else if bars.TooManyRequests {
+			err = errors.New("Too Many Requests")
+		} else {
+			job.CurrDay += bars.Days
 
-		if !bars.NoData {
-			err = storeBars(blk, bars.Bars)
-			if err == nil {
-				err = updateStatus(jc, blk, job)
+			if !bars.NoData {
+				err = storeBars(blk, bars.Bars)
+				if err == nil {
+					err = updateStatus(jc, blk, job)
+				}
 			}
+
+			return bars.Days, err
 		}
 	}
 
-	return err
+	return 0, err
 }
 
 //=============================================================================

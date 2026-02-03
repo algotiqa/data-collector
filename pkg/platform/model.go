@@ -29,34 +29,37 @@ import "time"
 //=============================================================================
 
 type InstrumentResponse struct {
-	Offset   int           `json:"offset"`
-	Limit    int           `json:"limit"`
-	OverFlow bool          `json:"overFlow"`
-	Result   []Instrument  `json:"result"`
+	Offset   int          `json:"offset"`
+	Limit    int          `json:"limit"`
+	OverFlow bool         `json:"overFlow"`
+	Result   []Instrument `json:"result"`
 }
 
 //=============================================================================
 
 type Instrument struct {
-	Name            string     `json:"name"`
-	Description     string     `json:"description"`
-	Exchange        string     `json:"exchange"`
-	Country         string     `json:"country"`
-	Root            string     `json:"root"`
-	ExpirationDate  *time.Time `json:"expirationDate"`
-	PointValue      int        `json:"pointValue"`
-	MinMove         float64    `json:"minMove"`
-	Continuous      bool       `json:"continuous"`
-	Month           string     `json:"month"`
+	Name           string     `json:"name"`
+	Description    string     `json:"description"`
+	Exchange       string     `json:"exchange"`
+	Country        string     `json:"country"`
+	Root           string     `json:"root"`
+	ExpirationDate *time.Time `json:"expirationDate"`
+	PointValue     int        `json:"pointValue"`
+	MinMove        float64    `json:"minMove"`
+	Continuous     bool       `json:"continuous"`
+	Month          string     `json:"month"`
 }
 
 //=============================================================================
 
 type PriceBars struct {
-	Symbol string      `json:"symbol"`
-	Date   int         `json:"date"`
-	Bars   []*PriceBar `json:"bars"`
-	NoData bool        `json:"noData"`
+	Symbol          string      `json:"symbol"`
+	Date            int         `json:"date"`
+	Days            int         `json:"days"`
+	Bars            []*PriceBar `json:"bars"`
+	NoData          bool        `json:"noData"`
+	Timeout         bool        `json:"timeout"`
+	TooManyRequests bool        `json:"tooManyRequests"`
 }
 
 //=============================================================================
