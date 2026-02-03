@@ -56,10 +56,14 @@ const (
 
 type DPRollTrigger string
 
+//--- sdX : X solar days before expiration
+//--- bdX : X business days before expiration (skips saturdays, sundays and holidays)
+
 const (
 	DPRollTriggerSD4  = "sd4"
 	DPRollTriggerSD6  = "sd6"
 	DPRollTriggerSD30 = "sd30"
+	DPRollTriggerBD3  = "bd3"
 )
 
 //-----------------------------------------------------------------------------

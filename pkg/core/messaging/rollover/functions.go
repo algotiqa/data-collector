@@ -38,15 +38,45 @@ func calcRolloverDate(expirDate time.Time, rollTrigger db.DPRollTrigger) time.Ti
 		return calcRolloverDateByDays(expirDate, 4)
 	case db.DPRollTriggerSD6:
 		return calcRolloverDateByDays(expirDate, 6)
-	default:
+	case db.DPRollTriggerSD30:
 		return calcRolloverDateByDays(expirDate, 30)
+
+	case db.DPRollTriggerBD3:
+		return calcRolloverDateByBusinessDays(expirDate, 3)
 	}
+
+	panic("invalid rollover trigger")
 }
 
 //=============================================================================
 
 func calcRolloverDateByDays(expirDate time.Time, days int) time.Time {
 	return expirDate.AddDate(0, 0, -days)
+}
+
+//=============================================================================
+
+func calcRolloverDateByBusinessDays(expirDate time.Time, days int) time.Time {
+	d := expirDate.AddDate(0, 0, -days)
+
+	for {
+		if isBusinessDay(d) {
+			return d
+		}
+
+		d = d.AddDate(0, 0, -1)
+	}
+}
+
+//=============================================================================
+
+func isBusinessDay(date time.Time) bool {
+	wd := date.Weekday()
+	if wd == time.Saturday || wd == time.Sunday {
+		return false
+	}
+
+	return true
 }
 
 //=============================================================================
