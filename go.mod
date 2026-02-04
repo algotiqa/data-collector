@@ -3,7 +3,7 @@ module github.com/algotiqa/data-collector
 go 1.24.2
 
 require (
-	github.com/algotiqa/core v1.13.0
+	github.com/algotiqa/core v1.14.0
 	github.com/algotiqa/tiq-engine v0.0.5
 	github.com/gin-gonic/gin v1.11.0
 	github.com/go-sql-driver/mysql v1.9.3 // indirect

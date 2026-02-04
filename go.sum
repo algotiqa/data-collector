@@ -1,7 +1,7 @@
 filippo.io/edwards25519 v1.1.0 h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=
 filippo.io/edwards25519 v1.1.0/go.mod h1:BxyFTGdWcka3PhytdK4V28tE5sGfRvvvRV7EaN4VDT4=
-github.com/algotiqa/core v1.13.0 h1:EeJ6tbZZwGvNK0F6adJU3un1SNi3pigR4BGbg/i34VM=
-github.com/algotiqa/core v1.13.0/go.mod h1:p6zSSn6y8tF5b5Kg8rqnKloy2ow0knUt68mfe6ZcCmw=
+github.com/algotiqa/core v1.14.0 h1:8jd/TzexDxm/Rpt44RCQ+vm9dmTZtxZc0ZSG8ILA8U8=
+github.com/algotiqa/core v1.14.0/go.mod h1:p6zSSn6y8tF5b5Kg8rqnKloy2ow0knUt68mfe6ZcCmw=
 github.com/algotiqa/tiq-engine v0.0.5 h1:z8rBikyXF09G4/rfC6wHp0ydhPikWqc7lk9PeJRxt0c=
 github.com/algotiqa/tiq-engine v0.0.5/go.mod h1:fnByY24XgFR3V6XDMcW5oLL4+1z6qtHnCXkNV3fnQiA=
 github.com/antlr4-go/antlr/v4 v4.13.1 h1:SqQKkuVZ+zWkMMNkjy5FZe5mr5WURWnlpmOuzYWrPrQ=

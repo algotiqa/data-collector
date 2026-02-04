@@ -29,6 +29,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/algotiqa/core/datatype"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/ds"
 	"github.com/algotiqa/data-collector/pkg/platform"
@@ -56,8 +57,11 @@ func (i *InstrumentDownLoadJob) execute(jc *JobContext) error {
 		}
 
 		job.LoadFrom = job.LoadFrom.AddDays(days)
+		today := datatype.Today(time.UTC)
 
-		if job.LoadFrom.IsToday(time.UTC) {
+		if job.LoadFrom.Days(today) <= 0 {
+			//--- We will pass beyond today by 1 day, so we have to re-set LoadFrom
+			job.LoadFrom = today
 			jc.GoToSleep()
 			return nil
 		}
