@@ -25,10 +25,8 @@ THE SOFTWARE.
 package business
 
 import (
-	"errors"
 	"log/slog"
 	"math"
-	"strconv"
 	"time"
 
 	"github.com/algotiqa/core/auth"
@@ -39,11 +37,6 @@ import (
 	"github.com/algotiqa/data-collector/pkg/ds"
 	"gorm.io/gorm"
 )
-
-//=============================================================================
-
-var DefaultFrom = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
-var DefaultTo = time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC)
 
 //=============================================================================
 
@@ -61,8 +54,16 @@ func CreateDataConfig(tx *gorm.DB, id uint) (*DataConfig, error) {
 
 	i, err := db.GetDataInstrumentById(tx, id)
 	if err == nil {
+		if i == nil {
+			return nil, req.NewNotFoundError("Data instrument not found: %d", id)
+		}
+
 		p, err = db.GetDataProductById(tx, i.DataProductId)
 		if err == nil {
+			if p == nil {
+				return nil, req.NewNotFoundError("Data product not found: %d", i.DataProductId)
+			}
+
 			var instruments *[]db.DataInstrument
 			if i.VirtualInstrument {
 				instruments, err = db.GetRollingDataInstrumentsByProductIdFast(tx, p.Id, p.Months)
@@ -84,6 +85,9 @@ func GetDataInstrumentById(tx *gorm.DB, c *auth.Context, id uint, details bool) 
 	if err != nil {
 		return nil, err
 	}
+	if di == nil {
+		return nil, req.NewNotFoundError("Data instrument not found: %d", id)
+	}
 
 	if details {
 		//--- Add details (if any)
@@ -98,8 +102,8 @@ func GetDataInstrumentById(tx *gorm.DB, c *auth.Context, id uint, details bool) 
 
 //=============================================================================
 
-func GetDataInstrumentDataById(c *auth.Context, spec *DataInstrumentDataSpec) (*DataInstrumentDataResponse, error) {
-	params, err := parseInstrumentDataParams(spec)
+func GetDataInstrumentDataById(c *auth.Context, spec *QuerySpec) (*DataInstrumentDataResponse, error) {
+	params, err := NewQueryParams(spec)
 	if err != nil {
 		return nil, req.NewBadRequestError(err.Error())
 	}
@@ -122,14 +126,16 @@ func GetDataInstrumentDataById(c *auth.Context, spec *DataInstrumentDataSpec) (*
 	durR := time.Now().Sub(start).Seconds()
 	lenR := len(dataPoints)
 
+	fromDate, toDate := calcDataRange(dataPoints)
+
 	c.Log.Info("GetDataInstrumentDataById: Query stats", "durationQ", durQ, "recordsQ", lenQ, "durationR", durR, "recordsR", lenR)
 
 	return &DataInstrumentDataResponse{
 		Id:               spec.Id,
 		Symbol:           spec.Config.DataConfig.Symbol,
-		From:             params.From.Format(time.DateTime),
-		To:               params.To.Format(time.DateTime),
-		Timeframe:        spec.Config.DataConfig.Timeframe,
+		From:             fromDate,
+		To:               toDate,
+		Timeframe:        params.Timeframe,
 		Timezone:         params.Location.String(),
 		Reduction:        params.Reduction,
 		Reduced:          reduced,
@@ -203,7 +209,7 @@ func ReloadDataInstrumentData(tx *gorm.DB, c *auth.Context, id uint) (*db.Downlo
 
 	//--- Add download job
 
-	job := invloader.CreateDownloadJob(di, blk, 100, dp.Timezone)
+	job := invloader.CreateDownloadJob(di, blk, 100, dp)
 
 	return job, blk, db.AddDownloadJob(tx, job)
 }
@@ -227,125 +233,15 @@ func createConfig(i *db.DataInstrument, p *db.DataProduct, instruments *[]db.Dat
 	}
 
 	return &DataConfig{
-		DataConfig: ds.DataConfig{
+		DataConfig: &ds.DataConfig{
 			UserTable: userTable,
-			Timeframe: "1m",
 			Selector:  selector,
 			Symbol:    i.Symbol,
 		},
-		Timezone:          p.Timezone,
-		VirtualInstrument: i.VirtualInstrument,
-		Instruments:       instruments,
+		DataProduct:    p,
+		DataInstrument: i,
+		Instruments:    instruments,
 	}
-}
-
-//=============================================================================
-
-func parseInstrumentDataParams(spec *DataInstrumentDataSpec) (*DataInstrumentDataParams, error) {
-	loc, err := getLocation(spec.Timezone, spec.Config)
-	if err != nil {
-		return nil, errors.New("Bad timezone: " + spec.Timezone + " (" + err.Error() + ")")
-	}
-
-	from, err1 := parseTime(spec.From, DefaultFrom, loc)
-	to, err2 := parseTime(spec.To, DefaultTo, loc)
-
-	if err1 != nil {
-		return nil, errors.New("Bad 'from' parameter: " + spec.From + " (" + err1.Error() + ")")
-	}
-
-	if err2 != nil {
-		return nil, errors.New("Bad 'to' parameter: " + spec.To + " (" + err2.Error() + ")")
-	}
-
-	prLoc, err := time.LoadLocation(spec.Config.Timezone)
-	if err != nil {
-		return nil, errors.New("Bad product timezone: " + spec.Config.Timezone)
-	}
-
-	da, err3 := buildDataAggregator(&spec.Config.DataConfig, prLoc)
-	if err3 != nil {
-		return nil, errors.New("Bad timeframe: " + spec.Config.DataConfig.Timeframe + " (" + err3.Error() + ")")
-	}
-
-	red, err := parseReduction(spec.Reduction)
-
-	if err != nil {
-		return nil, errors.New("Bad reduction: " + spec.Reduction + " (" + err.Error() + ")")
-	}
-
-	return &DataInstrumentDataParams{
-		Location:   loc,
-		From:       from.UTC(),
-		To:         to.UTC(),
-		Reduction:  red,
-		Aggregator: da,
-	}, nil
-}
-
-//=============================================================================
-
-func getLocation(timezone string, config *DataConfig) (*time.Location, error) {
-	if timezone == "exchange" {
-		timezone = config.Timezone
-	}
-
-	return time.LoadLocation(timezone)
-}
-
-//=============================================================================
-
-func parseTime(t string, defValue time.Time, loc *time.Location) (time.Time, error) {
-	if len(t) == 0 {
-		return defValue, nil
-	}
-
-	return time.ParseInLocation(time.DateTime, t, loc)
-}
-
-//=============================================================================
-
-func buildDataAggregator(config *ds.DataConfig, productLoc *time.Location) (*ds.DataAggregator, error) {
-	tf := config.Timeframe
-
-	if tf == "1m" || tf == "5m" || tf == "15m" || tf == "60m" || tf == "1440m" {
-		return ds.NewDataAggregator(nil, productLoc), nil
-	}
-
-	if tf == "10m" {
-		config.Timeframe = "5m"
-		return ds.NewDataAggregator(ds.TimeSlotFunction10m, productLoc), nil
-	}
-	if tf == "30m" {
-		config.Timeframe = "15m"
-		return ds.NewDataAggregator(ds.TimeSlotFunction30m, productLoc), nil
-	}
-
-	return nil, errors.New("allowed values are 1m, 5m, 10m, 15m, 30m, 60m")
-}
-
-//=============================================================================
-
-func parseReduction(value string) (int, error) {
-	if value == "" {
-		return 0, nil
-	}
-
-	red, err := strconv.Atoi(value)
-
-	if err != nil {
-		return 0, err
-	}
-
-	if red == 0 {
-		return red, nil
-	}
-
-	if red < 100 || red > 100000 {
-		return 0, errors.New("allowed range is 100..100000")
-	}
-
-	return red, nil
 }
 
 //=============================================================================
@@ -384,14 +280,29 @@ func reduceDataPoints(dataPoints []*ds.DataPoint, reduction int) ([]*ds.DataPoin
 }
 
 //=============================================================================
+
+func calcDataRange(dataPoints []*ds.DataPoint) (string, string) {
+	var from, to string
+
+	if len(dataPoints) > 0 {
+		last := len(dataPoints) - 1
+
+		from = dataPoints[0].Time.Format(time.DateTime)
+		to = dataPoints[last].Time.Format(time.DateTime)
+	}
+
+	return from, to
+}
+
+//=============================================================================
 //===
 //=== Query splitting
 //===
 //=============================================================================
 
-func getDataPoints(params *DataInstrumentDataParams, config *DataConfig) ([]*ds.DataPoint, error) {
-	if !config.VirtualInstrument {
-		err := ds.GetDataPoints(params.From, params.To, &config.DataConfig, params.Location, params.Aggregator)
+func getDataPoints(params *QueryParams, config *DataConfig) ([]*ds.DataPoint, error) {
+	if !config.DataInstrument.VirtualInstrument {
+		err := ds.GetDataPoints(params.From, params.To, config.DataConfig, params.Location, params.Aggregator)
 		return params.Aggregator.DataPoints(), err
 	}
 
@@ -405,11 +316,11 @@ func getDataPoints(params *DataInstrumentDataParams, config *DataConfig) ([]*ds.
 	cumulateDeltas(chunks)
 
 	from := params.From
-	dconfig := &config.DataConfig
-	aggreg := ds.NewDataAggregator(nil, nil)
+	dconfig := config.DataConfig
+	aggreg := ds.NewSimpleAggregator(nil)
 
 	for i, c := range *chunks {
-		to := c.RolloverDate
+		to := &c.RolloverDate
 		if i == len(*chunks)-1 {
 			to = params.To
 		}
@@ -420,7 +331,13 @@ func getDataPoints(params *DataInstrumentDataParams, config *DataConfig) ([]*ds.
 			return nil, err
 		}
 		shiftDataPoints(params.Aggregator, aggreg, c.Delta)
-		from = to.Add(time.Second * 30)
+
+		//--- When not provided by the user, 'to' will be nil on the last chunk
+
+		if to != nil {
+			aux := to.Add(time.Second * 30)
+			from = &aux
+		}
 	}
 
 	return aggreg.DataPoints(), nil
@@ -428,7 +345,7 @@ func getDataPoints(params *DataInstrumentDataParams, config *DataConfig) ([]*ds.
 
 //=============================================================================
 
-func calcInstrumentListToQuery(from, to time.Time, list *[]db.DataInstrument) *[]*QueryChunk {
+func calcInstrumentListToQuery(from, to *time.Time, list *[]db.DataInstrument) *[]*QueryChunk {
 	var res []*QueryChunk
 
 	for _, di := range *list {
@@ -437,13 +354,13 @@ func calcInstrumentListToQuery(from, to time.Time, list *[]db.DataInstrument) *[
 		}
 
 		if di.RolloverStatus == db.DIRollStatusReady {
-			if from.Compare(*di.RolloverDate) <= 0 {
+			if from == nil || from.Compare(*di.RolloverDate) <= 0 {
 				res = append(res, buildQueryChunk(&di))
 			}
 
 			//--- Is this the last instrument that contains data?
 
-			if to.Compare(*di.RolloverDate) <= 0 {
+			if to != nil && to.Compare(*di.RolloverDate) <= 0 {
 				return &res
 			}
 		}
@@ -497,7 +414,7 @@ func cumulateDeltas(chunks *[]*QueryChunk) {
 
 //=============================================================================
 
-func shiftDataPoints(source, destin *ds.DataAggregator, delta float64) {
+func shiftDataPoints(source, destin ds.DataAggregator, delta float64) {
 	for _, dp := range source.DataPoints() {
 		dp.Open += delta
 		dp.High += delta

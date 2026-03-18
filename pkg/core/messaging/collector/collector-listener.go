@@ -1,6 +1,6 @@
 //=============================================================================
 /*
-Copyright © 2024 Andrea Carboni andrea.carboni71@gmail.com
+Copyright © 2026 Andrea Carboni andrea.carboni71@gmail.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,54 +22,49 @@ THE SOFTWARE.
 */
 //=============================================================================
 
-package main
+package collector
 
 import (
+	"encoding/json"
 	"log/slog"
 
-	"github.com/algotiqa/core/auth"
-	"github.com/algotiqa/core/boot"
 	"github.com/algotiqa/core/msg"
-	"github.com/algotiqa/core/req"
-	"github.com/algotiqa/data-collector/pkg/app"
-	"github.com/algotiqa/data-collector/pkg/core/jobmanager"
-	"github.com/algotiqa/data-collector/pkg/core/messaging"
-	"github.com/algotiqa/data-collector/pkg/core/process"
+	"github.com/algotiqa/data-collector/pkg/core/messaging/collector/file"
+	"github.com/algotiqa/data-collector/pkg/core/messaging/collector/rollover"
 	"github.com/algotiqa/data-collector/pkg/db"
-	"github.com/algotiqa/data-collector/pkg/ds"
-	"github.com/algotiqa/data-collector/pkg/platform"
-	"github.com/algotiqa/data-collector/pkg/service"
 )
 
 //=============================================================================
 
-const component = "data-collector"
+func HandleMessage(m *msg.Message) bool {
+	slog.Info("handleInternalMessage: New internal message received", "source", m.Source, "type", m.Type)
 
-//=============================================================================
+	if m.Source == msg.SourceUploadJob {
+		job := db.IngestionJob{}
+		err := json.Unmarshal(m.Entity, &job)
+		if err != nil {
+			slog.Error("handleInternalMessage: Dropping badly formatted message for upload job!", "entity", string(m.Entity))
+			return true
+		}
 
-func main() {
-	cfg := &app.Config{}
-	boot.ReadConfig(component, cfg)
-	logger := boot.InitLogger(component, &cfg.Application)
-	engine := boot.InitEngine(logger, &cfg.Application)
-	initClients()
-	db.InitDatabase(&cfg.Database)
-	ds.InitDatastore(&cfg.Datastore)
-	platform.Init(&cfg.Platform)
-	auth.InitAuthentication(&cfg.Authentication)
-	msg.InitMessaging(&cfg.Messaging)
-	service.Init(engine, cfg, logger)
-	messaging.InitMessageListener()
-	process.Init(cfg)
-	jobmanager.Init(cfg)
-	boot.RunHttpServer(engine, &cfg.Application)
-}
+		if m.Type == msg.TypeCreate {
+			return file.Upload(&job)
+		}
+	} else if m.Source == msg.SourceRollRecalcJob {
+		job := rollover.RecalcJob{}
+		err := json.Unmarshal(m.Entity, &job)
+		if err != nil {
+			slog.Error("handleInternalMessage: Dropping badly formatted message for rollover recalc job!", "entity", string(m.Entity))
+			return true
+		}
 
-//=============================================================================
+		if m.Type == msg.TypeCreate {
+			return rollover.Recalc(&job)
+		}
+	}
 
-func initClients() {
-	slog.Info("Initializing clients...")
-	req.AddClient("bf", "ca.crt", "server.crt", "server.key")
+	slog.Error("handleInternalMessage: Dropping message with unknown source/type!", "source", m.Source, "type", m.Type)
+	return true
 }
 
 //=============================================================================

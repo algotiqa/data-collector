@@ -114,31 +114,22 @@ func uploadDataInstrumentData(c *auth.Context) {
 func analyzeDataProduct(c *auth.Context) {
 	var result *business.DataProductAnalysisResponse
 	var config *business.DataConfig
-	var backDays int
 
 	id, err := c.GetIdFromUrl()
 
 	if err == nil {
-		backDays, err = c.GetParamAsInt("backDays", 0)
+		err = db.RunInTransaction(func(tx *gorm.DB) error {
+			cfg, err := business.CreateDataConfigForProduct(c, tx, id)
+			config = cfg
+			return err
+		})
+
 		if err == nil {
-			err = db.RunInTransaction(func(tx *gorm.DB) error {
-				cfg, err := business.CreateDataConfigForProduct(c, tx, id)
-				config = cfg
-				return err
-			})
-
+			spec := createQuerySpec(c, id, config)
+			result, err = business.AnalyzeProduct(c, spec)
 			if err == nil {
-				spec := &business.DataProductAnalysisSpec{
-					Id:       id,
-					BackDays: backDays,
-					Config:   config,
-				}
-
-				result, err = business.AnalyzeProduct(c, spec)
-				if err == nil {
-					_ = c.ReturnObject(result)
-					return
-				}
+				_ = c.ReturnObject(result)
+				return
 			}
 		}
 	}

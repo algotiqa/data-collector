@@ -26,7 +26,7 @@ package service
 
 import (
 	"github.com/algotiqa/core/auth"
-	"github.com/algotiqa/data-collector/pkg/core/messaging/file"
+	"github.com/algotiqa/data-collector/pkg/core/messaging/collector/file"
 )
 
 //=============================================================================

@@ -25,15 +25,12 @@ THE SOFTWARE.
 package messaging
 
 import (
-	"encoding/json"
 	"log/slog"
 
 	"github.com/algotiqa/core/msg"
-	"github.com/algotiqa/data-collector/pkg/core/messaging/file"
-	"github.com/algotiqa/data-collector/pkg/core/messaging/rollover"
+	"github.com/algotiqa/data-collector/pkg/core/messaging/collector"
+	"github.com/algotiqa/data-collector/pkg/core/messaging/inventory"
 	"github.com/algotiqa/data-collector/pkg/core/messaging/system"
-	"github.com/algotiqa/data-collector/pkg/core/messaging/update"
-	"github.com/algotiqa/data-collector/pkg/db"
 )
 
 //=============================================================================
@@ -41,43 +38,9 @@ import (
 func InitMessageListener() {
 	slog.Info("Starting message listeners...")
 
-	go msg.ReceiveMessages(msg.QuInventoryToCollector, update.HandleUpdateMessage)
+	go msg.ReceiveMessages(msg.QuInventoryToCollector, inventory.HandleUpdateMessage)
 	go msg.ReceiveMessages(msg.QuSystemToCollector, system.HandleMessage)
-	go msg.ReceiveMessages(msg.QuCollectorToInternal, handleInternalMessage)
-}
-
-//=============================================================================
-
-func handleInternalMessage(m *msg.Message) bool {
-
-	slog.Info("handleInternalMessage: New internal message received", "source", m.Source, "type", m.Type)
-
-	if m.Source == msg.SourceUploadJob {
-		job := db.IngestionJob{}
-		err := json.Unmarshal(m.Entity, &job)
-		if err != nil {
-			slog.Error("handleInternalMessage: Dropping badly formatted message for upload job!", "entity", string(m.Entity))
-			return true
-		}
-
-		if m.Type == msg.TypeCreate {
-			return file.Upload(&job)
-		}
-	} else if m.Source == msg.SourceRollRecalcJob {
-		job := rollover.RecalcJob{}
-		err := json.Unmarshal(m.Entity, &job)
-		if err != nil {
-			slog.Error("handleInternalMessage: Dropping badly formatted message for rollover recalc job!", "entity", string(m.Entity))
-			return true
-		}
-
-		if m.Type == msg.TypeCreate {
-			return rollover.Recalc(&job)
-		}
-	}
-
-	slog.Error("handleInternalMessage: Dropping message with unknown source/type!", "source", m.Source, "type", m.Type)
-	return true
+	go msg.ReceiveMessages(msg.QuCollectorToInternal, collector.HandleMessage)
 }
 
 //=============================================================================

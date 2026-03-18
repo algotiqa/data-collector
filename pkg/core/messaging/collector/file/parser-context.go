@@ -28,6 +28,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/algotiqa/data-collector/pkg/business"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/ds"
 	"gorm.io/gorm"
@@ -37,13 +38,13 @@ import (
 
 type ParserContext struct {
 	Reader          io.Reader
-	Config          *ds.DataConfig
+	Config          *business.DataConfig
 	FileLocation    *time.Location
 	ProductLocation *time.Location
 	Job             *db.IngestionJob
 	Block           *db.DataBlock
 	DataRange       *DataRange
-	DataAggreg      *ds.DataAggregator
+	DataAggreg      ds.DataAggregator
 
 	//--- Private stuff
 
@@ -57,19 +58,20 @@ type ParserContext struct {
 //===
 //=============================================================================
 
-func NewParserContext(file io.Reader, config *ds.DataConfig, fileLoc *time.Location, job *db.IngestionJob, b *db.DataBlock, prLoc *time.Location) *ParserContext {
+func NewParserContext(file io.Reader, config *business.DataConfig, fileLoc *time.Location,
+	job *db.IngestionJob, b *db.DataBlock, prodLoc *time.Location) *ParserContext {
 	c := &ParserContext{
 		Reader:          file,
 		Config:          config,
 		FileLocation:    fileLoc,
-		ProductLocation: prLoc,
+		ProductLocation: prodLoc,
 		Job:             job,
 		Block:           b,
 	}
 
 	c.dataPoints = []*ds.DataPoint{}
 	c.DataRange = &DataRange{}
-	c.DataAggreg = ds.NewDataAggregator(ds.TimeSlotFunction5m, prLoc)
+	c.DataAggreg = ds.NewSimpleAggregator(ds.NewQuantizer1mTo5m())
 
 	return c
 }
@@ -81,12 +83,13 @@ func NewParserContext(file io.Reader, config *ds.DataConfig, fileLoc *time.Locat
 //=============================================================================
 
 func (c *ParserContext) SaveDataPoint(dp *ds.DataPoint, bytes int) error {
+	dp.Time = dp.Time.In(c.ProductLocation)
 	c.dataPoints = append(c.dataPoints, dp)
 	c.Job.Records++
 	c.currBytes += int64(bytes)
 
 	if c.Job.Records%8192 == 0 {
-		if err := ds.SetDataPoints(c.dataPoints, c.Config); err != nil {
+		if err := ds.SetDataPoints(c.dataPoints, "1m", c.Config.DataConfig); err != nil {
 			return err
 		}
 		c.dataPoints = []*ds.DataPoint{}
@@ -102,7 +105,7 @@ func (c *ParserContext) SaveDataPoint(dp *ds.DataPoint, bytes int) error {
 
 func (c *ParserContext) Flush() error {
 	c.DataAggreg.Flush()
-	return ds.SetDataPoints(c.dataPoints, c.Config)
+	return ds.SetDataPoints(c.dataPoints, "1m", c.Config.DataConfig)
 }
 
 //=============================================================================

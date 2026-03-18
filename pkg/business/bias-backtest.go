@@ -122,11 +122,9 @@ func GetBacktestInfo(tx *gorm.DB, c *auth.Context, id uint, spec *BiasBacktestSp
 func RunBacktest(c *auth.Context, bbr *BiasBacktestResponse) error {
 	c.Log.Info("RunBacktest: Starting backtest for bias analysis", "id", bbr.BiasAnalysis.Id)
 
-	bbr.config.DataConfig.Timeframe = "15m"
-
-	loc, _ := time.LoadLocation(bbr.config.Timezone)
-	da := ds.NewDataAggregator(ds.TimeSlotFunction30m, loc)
-	err := ds.GetDataPoints(DefaultFrom, DefaultTo, &bbr.config.DataConfig, loc, da)
+	loc, _ := time.LoadLocation(bbr.config.DataProduct.Timezone)
+	da := ds.NewSimpleAggregator(ds.NewQuantizer15mTo30m())
+	err := ds.GetDataPoints(nil, nil, bbr.config.DataConfig, loc, da)
 
 	if err != nil {
 		c.Log.Error("RunBacktest: Could not retrieve data points", "error", err.Error())

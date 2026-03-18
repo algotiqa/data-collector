@@ -29,7 +29,7 @@ import (
 	"time"
 
 	"github.com/algotiqa/core/msg"
-	"github.com/algotiqa/data-collector/pkg/core/messaging/rollover"
+	"github.com/algotiqa/data-collector/pkg/core/messaging/collector/rollover"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"gorm.io/gorm"
 )

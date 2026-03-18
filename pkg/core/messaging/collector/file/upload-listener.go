@@ -52,7 +52,7 @@ func Upload(job *db.IngestionJob) bool {
 				slog.Info("HandleFileUpload: Calculating aggregates", "filename", job.Filename)
 				err = calcAggregates(context)
 				if err == nil {
-					err = setBlockInReady(block)
+					err = setDataBlockInReady(block)
 					if err == nil {
 						slog.Info("HandleFileUpload: Operation complete", "filename", job.Filename)
 						_ = ds.DeleteDataFile(job.Filename)
@@ -100,7 +100,7 @@ func ingestDatafile(job *db.IngestionJob, b *db.DataBlock) (*ParserContext, erro
 	}
 
 	//--- This is the file's timezone (will be used to parse dates inside the file)
-	floc, err := retrieveLocation(job.Timezone)
+	fileLoc, err := retrieveLocation(job.Timezone)
 	if err != nil {
 		return nil, err
 	}
@@ -110,13 +110,17 @@ func ingestDatafile(job *db.IngestionJob, b *db.DataBlock) (*ParserContext, erro
 		return nil, err
 	}
 
+	prodLoc, err := retrieveLocation(config.DataProduct.Timezone)
+	if err != nil {
+		return nil, err
+	}
+
 	file, err := ds.OpenDatafile(job.Filename)
 	if err != nil {
 		return nil, err
 	}
 
-	//--- We need to use UTC otherwise daily aggregates are not properly computed
-	context := NewParserContext(file, &config.DataConfig, floc, job, b, time.UTC)
+	context := NewParserContext(file, config, fileLoc, job, b, prodLoc)
 	defer file.Close()
 
 	err = parser.Parse(context)
@@ -183,7 +187,7 @@ func setDataBlockInProcessing(job *db.IngestionJob, b *db.DataBlock, dr *DataRan
 
 //=============================================================================
 
-func setBlockInReady(block *db.DataBlock) error {
+func setDataBlockInReady(block *db.DataBlock) error {
 	return db.RunInTransaction(func(tx *gorm.DB) error {
 		block.Status = db.DBStatusReady
 		block.Progress = 100
@@ -211,7 +215,14 @@ func calcAggregates(context *ParserContext) error {
 	da5m := context.DataAggreg
 	config := context.Config
 
-	return ds.BuildAggregates(da5m, config)
+	err := ds.BuildAggregates(da5m, config.DataConfig)
+	if err == nil {
+		da1440m := ds.NewDailyAggregator(config.DataProduct.SessionStart)
+		da5m.Aggregate(da1440m)
+		err = ds.SaveAggregate(da1440m, config.DataConfig)
+	}
+
+	return err
 }
 
 //=============================================================================

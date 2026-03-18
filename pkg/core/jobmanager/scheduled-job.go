@@ -51,9 +51,9 @@ func (sj *ScheduledJob) IsSchedulable() bool {
 	if sj.lastError != nil {
 		duration := time.Now().Sub(*sj.lastError) / time.Hour
 		return duration > RetryDelayHours
-	} else {
-		return sj.job.LoadFrom < datatype.Today(time.UTC)
 	}
+
+	return sj.job.LoadFrom < datatype.Today(time.UTC)
 }
 
 //=============================================================================

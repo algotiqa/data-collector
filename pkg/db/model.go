@@ -69,17 +69,18 @@ const (
 //-----------------------------------------------------------------------------
 
 type DataProduct struct {
-	Id                   uint          `json:"id" gorm:"primaryKey"`
-	Username             string        `json:"username"`
-	ConnectionCode       string        `json:"connectionCode"`
-	SystemCode           string        `json:"systemCode"`
-	Symbol               string        `json:"symbol"`
-	SupportsMultipleData bool          `json:"supportsMultipleData"`
-	Connected            bool          `json:"connected"`
-	Timezone             string        `json:"timezone"`
-	Status               DPStatus      `json:"status"`
-	Months               string        `json:"months"`
-	RolloverTrigger      DPRollTrigger `json:"rollTrigger"`
+	Id                   uint             `json:"id" gorm:"primaryKey"`
+	Username             string           `json:"username"`
+	ConnectionCode       string           `json:"connectionCode"`
+	SystemCode           string           `json:"systemCode"`
+	Symbol               string           `json:"symbol"`
+	SupportsMultipleData bool             `json:"supportsMultipleData"`
+	Connected            bool             `json:"connected"`
+	Timezone             string           `json:"timezone"`
+	Status               DPStatus         `json:"status"`
+	Months               string           `json:"months"`
+	RolloverTrigger      DPRollTrigger    `json:"rollTrigger"`
+	SessionStart         datatype.IntTime `json:"sessionStart"`
 }
 
 //=============================================================================
@@ -207,6 +208,7 @@ type DownloadJob struct {
 	Priority         int              `json:"priority"`
 	UserConnection   string           `json:"userConnection"`
 	ProductTimezone  string           `json:"productTimezone"`
+	SessionStart     datatype.IntTime `json:"sessionStart"`
 	CurrDay          int              `json:"currDay"`
 	TotDays          int              `json:"totDays"`
 	Error            string           `json:"error"`

@@ -25,8 +25,6 @@ THE SOFTWARE.
 package business
 
 import (
-	"time"
-
 	"github.com/algotiqa/data-collector/pkg/core"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/ds"
@@ -56,33 +54,12 @@ type DatafileUploadResponse struct {
 //=== Get data request & response
 //=============================================================================
 
-type DataInstrumentDataSpec struct {
-	Id        uint
-	From      string
-	To        string
-	Timezone  string
-	Reduction string
-	Config    *DataConfig
-}
-
-//=============================================================================
-
-type DataInstrumentDataParams struct {
-	Location   *time.Location
-	From       time.Time
-	To         time.Time
-	Reduction  int
-	Aggregator *ds.DataAggregator
-}
-
-//=============================================================================
-
 type DataInstrumentDataResponse struct {
 	Id               uint            `json:"id"`
 	Symbol           string          `json:"symbol"`
 	From             string          `json:"from"`
 	To               string          `json:"to"`
-	Timeframe        string          `json:"timeframe"`
+	Timeframe        int             `json:"timeframe"`
 	Timezone         string          `json:"timezone"`
 	Reduction        int             `json:"reduction,omitempty"`
 	Reduced          bool            `json:"reduced"`
@@ -175,10 +152,10 @@ func (bc *BiasConfig) FromBiasConfig(dbc *db.BiasConfig) {
 //=============================================================================
 
 type DataConfig struct {
-	DataConfig        ds.DataConfig
-	Timezone          string
-	VirtualInstrument bool
-	Instruments       *[]db.DataInstrument
+	DataConfig     *ds.DataConfig
+	DataProduct    *db.DataProduct
+	DataInstrument *db.DataInstrument
+	Instruments    *[]db.DataInstrument
 }
 
 //=============================================================================

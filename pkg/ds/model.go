@@ -77,7 +77,6 @@ func (dp *DataPoint) String() string {
 
 type DataConfig struct {
 	UserTable bool
-	Timeframe string
 	Selector  any
 	Symbol    string
 }

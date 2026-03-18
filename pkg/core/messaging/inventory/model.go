@@ -22,9 +22,12 @@ THE SOFTWARE.
 */
 //=============================================================================
 
-package update
+package inventory
 
-import "github.com/algotiqa/data-collector/pkg/db"
+import (
+	"github.com/algotiqa/core/datatype"
+	"github.com/algotiqa/data-collector/pkg/db"
+)
 
 //=============================================================================
 //===
@@ -80,6 +83,7 @@ type DataProduct struct {
 	ProductType     string           `json:"productType"`
 	Months          string           `json:"months"`
 	RolloverTrigger db.DPRollTrigger `json:"rolloverTrigger"`
+	SessionStart    datatype.IntTime `json:"sessionStart"`
 }
 
 //=============================================================================

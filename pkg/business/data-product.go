@@ -115,6 +115,11 @@ func AddDataInstrumentAndJob(tx *gorm.DB, c *auth.Context, productId uint, spec 
 		Parser:           spec.Parser,
 	}
 
+	err = db.DeleteAllIngestionJobsByDataInstrumentId(tx, i.Id)
+	if err != nil {
+		return err
+	}
+
 	err = db.AddIngestionJob(tx, job)
 	if err != nil {
 		return err

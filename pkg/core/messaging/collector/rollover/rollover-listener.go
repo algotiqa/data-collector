@@ -219,11 +219,11 @@ func calcRolloverDelta(dp *db.DataProduct, curr, next *db.DataInstrumentExt, sta
 //=============================================================================
 
 func getPrices(systemCode, symbol string, from time.Time) ([]*ds.DataPoint, error) {
-	config := ds.NewDataConfig(systemCode, symbol, "60m")
-	da := ds.NewDataAggregator(nil, nil)
+	config := ds.NewDataConfig(systemCode, symbol)
+	da := ds.NewSimpleAggregator(ds.NewQuantizerIdentity(60))
 	to := from.Add(5 * 24 * time.Hour)
 
-	err := ds.GetDataPoints(from, to, config, time.UTC, da)
+	err := ds.GetDataPoints(&from, &to, config, time.UTC, da)
 	if err != nil {
 		return nil, err
 	}

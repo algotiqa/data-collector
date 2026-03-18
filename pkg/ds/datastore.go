@@ -42,6 +42,11 @@ import (
 
 //=============================================================================
 
+var DefaultFrom = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+var DefaultTo = time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC)
+
+//=============================================================================
+
 var pool *pgxpool.Pool
 var staging string
 
@@ -116,10 +121,9 @@ func DeleteDataFile(filename string) error {
 //===
 //=============================================================================
 
-func NewDataConfig(systemCode, symbol, timeframe string) *DataConfig {
+func NewDataConfig(systemCode, symbol string) *DataConfig {
 	return &DataConfig{
 		UserTable: false,
-		Timeframe: timeframe,
 		Selector:  systemCode,
 		Symbol:    symbol,
 	}
@@ -127,8 +131,15 @@ func NewDataConfig(systemCode, symbol, timeframe string) *DataConfig {
 
 //=============================================================================
 
-func GetDataPoints(from time.Time, to time.Time, config *DataConfig, loc *time.Location, da *DataAggregator) error {
-	query := buildGetQuery(config)
+func GetDataPoints(from *time.Time, to *time.Time, config *DataConfig, loc *time.Location, da DataAggregator) error {
+	if from == nil {
+		from = &DefaultFrom
+	}
+	if to == nil {
+		to = &DefaultTo
+	}
+
+	query := buildGetQuery(da.BaseTimeframe(), config)
 
 	rows, err := pool.Query(context.Background(), query, config.Symbol, config.Selector, from, to)
 	if err != nil {
@@ -160,12 +171,12 @@ func GetDataPoints(from time.Time, to time.Time, config *DataConfig, loc *time.L
 
 //=============================================================================
 
-func SetDataPoints(points []*DataPoint, config *DataConfig) error {
+func SetDataPoints(points []*DataPoint, timeframe string, config *DataConfig) error {
 	if len(points) == 0 {
 		return nil
 	}
 
-	query := buildAddQuery(config)
+	query := buildAddQuery(timeframe, config)
 	batch := &pgx.Batch{}
 
 	for i := range points {
@@ -183,26 +194,40 @@ func SetDataPoints(points []*DataPoint, config *DataConfig) error {
 
 //=============================================================================
 
-func BuildAggregates(da5m *DataAggregator, config *DataConfig) error {
-	err := saveAggregate(da5m, config, "5m")
+func BuildAggregates(da5m DataAggregator, config *DataConfig) error {
+	err := SaveAggregate(da5m, config)
 
 	if err == nil {
-		da15m := NewDataAggregator(TimeSlotFunction15m, da5m.productLoc)
+		da15m := NewSimpleAggregator(NewQuantizer5mTo15m())
 		da5m.Aggregate(da15m)
-		err = saveAggregate(da15m, config, "15m")
+		err = SaveAggregate(da15m, config)
 		if err == nil {
-			da60m := NewDataAggregator(TimeSlotFunction60m, da5m.productLoc)
+			da60m := NewSimpleAggregator(NewQuantizer15mTo60m())
 			da15m.Aggregate(da60m)
-			err = saveAggregate(da60m, config, "60m")
-			if err == nil {
-				da1day := NewDataAggregator(TimeSlotFunction1440m, da5m.productLoc)
-				da60m.Aggregate(da1day)
-				err = saveAggregate(da1day, config, "1440m")
-			}
+			err = SaveAggregate(da60m, config)
 		}
 	}
 
 	return err
+}
+
+//=============================================================================
+
+func SaveAggregate(da DataAggregator, config *DataConfig) error {
+	var dataPoints []*DataPoint
+
+	for _, dp := range da.DataPoints() {
+		dataPoints = append(dataPoints, dp)
+
+		if len(dataPoints) == 8192 {
+			if err := SetDataPoints(dataPoints, da.TargetTimeframe(), config); err != nil {
+				return err
+			}
+			dataPoints = []*DataPoint{}
+		}
+	}
+
+	return SetDataPoints(dataPoints, da.TargetTimeframe(), config)
 }
 
 //=============================================================================
@@ -211,7 +236,7 @@ func BuildAggregates(da5m *DataAggregator, config *DataConfig) error {
 //===
 //=============================================================================
 
-func buildGetQuery(config *DataConfig) string {
+func buildGetQuery(timeframe string, config *DataConfig) string {
 	table := "system_data_"
 	field := "system_code"
 
@@ -220,7 +245,7 @@ func buildGetQuery(config *DataConfig) string {
 		field = "product_id"
 	}
 
-	table = table + config.Timeframe
+	table = table + timeframe
 
 	query := "SELECT time, open, high, low, close, up_volume, down_volume, up_ticks, down_ticks, open_interest FROM " + table + " " +
 		"WHERE symbol = $1 AND " + field + " = $2 AND time >= $3 AND time <= $4 " +
@@ -231,7 +256,7 @@ func buildGetQuery(config *DataConfig) string {
 
 //=============================================================================
 
-func buildAddQuery(config *DataConfig) string {
+func buildAddQuery(timeframe string, config *DataConfig) string {
 	table := "system_data_"
 	field := "system_code"
 
@@ -240,7 +265,7 @@ func buildAddQuery(config *DataConfig) string {
 		field = "product_id"
 	}
 
-	table = table + config.Timeframe
+	table = table + timeframe
 
 	query := "INSERT INTO " + table + "(time, symbol, " + field + ", open, high, low, close, up_volume, down_volume, up_ticks, down_ticks, open_interest) " +
 		"VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) " +
@@ -256,26 +281,6 @@ func buildAddQuery(config *DataConfig) string {
 		"open_interest=excluded.open_interest"
 
 	return query
-}
-
-//=============================================================================
-
-func saveAggregate(da *DataAggregator, config *DataConfig, timeframe string) error {
-	var dataPoints []*DataPoint
-	config.Timeframe = timeframe
-
-	for _, dp := range da.DataPoints() {
-		dataPoints = append(dataPoints, dp)
-
-		if len(dataPoints) == 8192 {
-			if err := SetDataPoints(dataPoints, config); err != nil {
-				return err
-			}
-			dataPoints = []*DataPoint{}
-		}
-	}
-
-	return SetDataPoints(dataPoints, config)
 }
 
 //=============================================================================

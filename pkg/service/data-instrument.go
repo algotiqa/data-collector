@@ -81,7 +81,6 @@ func getDataInstrumentData(c *auth.Context) {
 	var config *business.DataConfig
 
 	id, err := c.GetIdFromUrl()
-	timeframe := c.GetParamAsString("timeframe", "5m")
 
 	if err == nil {
 		err = db.RunInTransaction(func(tx *gorm.DB) error {
@@ -91,15 +90,7 @@ func getDataInstrumentData(c *auth.Context) {
 		})
 
 		if err == nil {
-			config.DataConfig.Timeframe = timeframe
-			spec := &business.DataInstrumentDataSpec{
-				Id:        id,
-				From:      c.GetParamAsString("from", ""),
-				To:        c.GetParamAsString("to", ""),
-				Timezone:  c.GetParamAsString("timezone", "UTC"),
-				Reduction: c.GetParamAsString("reduction", ""),
-				Config:    config,
-			}
+			spec := createQuerySpec(c, id, config)
 			result, err = business.GetDataInstrumentDataById(c, spec)
 			if err == nil {
 				_ = c.ReturnObject(result)
@@ -131,6 +122,21 @@ func reloadDataInstrumentData(c *auth.Context) {
 	}
 
 	c.ReturnError(err)
+}
+
+//=============================================================================
+
+func createQuerySpec(c *auth.Context, id uint, config *business.DataConfig) *business.QuerySpec {
+	return &business.QuerySpec{
+		Id:        id,
+		From:      c.GetParamAsString("from", ""),
+		To:        c.GetParamAsString("to", ""),
+		BackDays:  c.GetParamAsString("backDays", ""),
+		Timezone:  c.GetParamAsString("timezone", ""),
+		Timeframe: c.GetParamAsString("timeframe", ""),
+		Reduction: c.GetParamAsString("reduction", ""),
+		Config:    config,
+	}
 }
 
 //=============================================================================

@@ -22,7 +22,7 @@ THE SOFTWARE.
 */
 //=============================================================================
 
-package update
+package inventory
 
 import (
 	"encoding/json"
@@ -89,6 +89,7 @@ func addDataProduct(dpm *DataProductMessage) bool {
 		pd.Timezone = dpm.Exchange.Timezone
 		pd.Months = dpm.DataProduct.Months
 		pd.RolloverTrigger = dpm.DataProduct.RolloverTrigger
+		pd.SessionStart = dpm.DataProduct.SessionStart
 		pd.Status = db.DPStatusReady
 
 		if !pd.SupportsMultipleData {

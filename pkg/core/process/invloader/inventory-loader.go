@@ -34,7 +34,7 @@ import (
 	"github.com/algotiqa/core/msg"
 	"github.com/algotiqa/data-collector/pkg/app"
 	"github.com/algotiqa/data-collector/pkg/core/jobmanager"
-	"github.com/algotiqa/data-collector/pkg/core/messaging/rollover"
+	"github.com/algotiqa/data-collector/pkg/core/messaging/collector/rollover"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/platform"
 	"gorm.io/gorm"
@@ -66,7 +66,7 @@ func Init(cfg *app.Config) *time.Ticker {
 
 //=============================================================================
 
-func CreateDownloadJob(di *db.DataInstrument, blk *db.DataBlock, priority int, timezone string) *db.DownloadJob {
+func CreateDownloadJob(di *db.DataInstrument, blk *db.DataBlock, priority int, dp *db.DataProduct) *db.DownloadJob {
 	return &db.DownloadJob{
 		DataInstrumentId: di.Id,
 		DataBlockId:      blk.Id,
@@ -76,7 +76,8 @@ func CreateDownloadJob(di *db.DataInstrument, blk *db.DataBlock, priority int, t
 		TotDays:          int(DaysBack),
 		Status:           db.DJStatusWaiting,
 		Priority:         priority,
-		ProductTimezone:  timezone,
+		ProductTimezone:  dp.Timezone,
+		SessionStart:     dp.SessionStart,
 	}
 }
 
@@ -214,7 +215,7 @@ func addDataInstruments(tx *gorm.DB, dp *db.DataProduct, instruments []*db.DataI
 
 		if isNew {
 			var sj *jobmanager.ScheduledJob
-			sj, err = addDownloadJob(tx, block, di, dp.Timezone)
+			sj, err = addDownloadJob(tx, block, di, dp)
 			if err != nil {
 				return nil, err
 			}
@@ -266,8 +267,8 @@ func getOrCreateDataBlock(tx *gorm.DB, dp *db.DataProduct, di *db.DataInstrument
 
 //=============================================================================
 
-func addDownloadJob(tx *gorm.DB, block *db.DataBlock, di *db.DataInstrument, timezone string) (*jobmanager.ScheduledJob, error) {
-	job := CreateDownloadJob(di, block, 0, timezone)
+func addDownloadJob(tx *gorm.DB, block *db.DataBlock, di *db.DataInstrument, dp *db.DataProduct) (*jobmanager.ScheduledJob, error) {
+	job := CreateDownloadJob(di, block, 0, dp)
 	err := db.AddDownloadJob(tx, job)
 	if err != nil {
 		return nil, err
@@ -287,7 +288,8 @@ func calcLoadFrom(expDate *time.Time) datatype.IntDate {
 //=============================================================================
 
 func calcLoadTo(expDate *time.Time) datatype.IntDate {
-	return datatype.ToIntDate(expDate)
+	date := expDate.UTC()
+	return datatype.ToIntDate(&date)
 }
 
 //=============================================================================

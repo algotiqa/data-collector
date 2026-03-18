@@ -24,7 +24,10 @@ THE SOFTWARE.
 
 package db
 
-import "gorm.io/gorm"
+import (
+	"github.com/algotiqa/core/req"
+	"gorm.io/gorm"
+)
 
 //=============================================================================
 
@@ -36,6 +39,13 @@ func AddIngestionJob(tx *gorm.DB, job *IngestionJob) error {
 
 func UpdateIngestionJob(tx *gorm.DB, job *IngestionJob) error {
 	return tx.Save(job).Error
+}
+
+//=============================================================================
+
+func DeleteAllIngestionJobsByDataInstrumentId(tx *gorm.DB, id uint) error {
+	err := tx.Delete(&IngestionJob{}, "data_instrument_id", id).Error
+	return req.NewServerErrorByError(err)
 }
 
 //=============================================================================

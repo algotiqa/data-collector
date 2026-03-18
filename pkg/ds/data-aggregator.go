@@ -27,28 +27,46 @@ package ds
 import (
 	"math"
 	"time"
+
+	"github.com/algotiqa/core/datatype"
 )
 
 //=============================================================================
-
-type TimeSlotFunction func(t time.Time) time.Time
-
+//===
+//=== DataAggregator interface
+//===
 //=============================================================================
 
-type DataAggregator struct {
-	currDp       *DataPoint
-	dataPoints   []*DataPoint
-	timeSlotFunc TimeSlotFunction
-	productLoc   *time.Location
+type DataAggregator interface {
+	BaseTimeframe() string
+	TargetTimeframe() string
+
+	// Add adds a datapoint. Time is ALWAYS in DataProduct.Timezone location
+	Add(dp *DataPoint)
+	Flush()
+	Clear()
+	Aggregate(daDes DataAggregator)
+	DataPoints() []*DataPoint
+}
+
+//=============================================================================
+//===
+//=== SimpleAggregator
+//===
+//=============================================================================
+
+type SimpleAggregator struct {
+	currDp     *DataPoint
+	dataPoints []*DataPoint
+	quantizer  Quantizer
 }
 
 //=============================================================================
 
-func NewDataAggregator(f TimeSlotFunction, productLocation *time.Location) *DataAggregator {
-	da := &DataAggregator{}
-	da.dataPoints   = []*DataPoint{}
-	da.timeSlotFunc = f
-	da.productLoc   = productLocation
+func NewSimpleAggregator(q Quantizer) *SimpleAggregator {
+	da := &SimpleAggregator{}
+	da.dataPoints = []*DataPoint{}
+	da.quantizer = q
 
 	return da
 }
@@ -59,48 +77,61 @@ func NewDataAggregator(f TimeSlotFunction, productLocation *time.Location) *Data
 //===
 //=============================================================================
 
-func (a *DataAggregator) Add(dp *DataPoint) {
+func (a *SimpleAggregator) BaseTimeframe() string {
+	return a.quantizer.BaseTimeframe()
+}
+
+//=============================================================================
+
+func (a *SimpleAggregator) TargetTimeframe() string {
+	return a.quantizer.TargetTimeframe()
+}
+
+//=============================================================================
+
+func (a *SimpleAggregator) Add(dp *DataPoint) {
 	//--- Handle the no aggregation case
 
-	if a.timeSlotFunc == nil {
+	if a.quantizer == nil {
 		a.dataPoints = append(a.dataPoints, dp)
 		return
 	}
 
 	//--- Aggregation required
 
+	dpTime := a.quantizer.Quantize(dp.Time)
+
 	if a.currDp == nil {
-		a.currDp = a.createInitialDataPoint(dp)
+		a.currDp = newDataPoint(dp, dpTime)
 	} else {
-		dpTime := a.timeSlotFunc(dp.Time.In(a.productLoc))
 		if a.currDp.Time.Equal(dpTime) {
-			a.Merge(dp)
+			merge(a.currDp, dp)
 		} else {
 			a.dataPoints = append(a.dataPoints, a.currDp)
-			a.currDp = a.createInitialDataPoint(dp)
+			a.currDp = newDataPoint(dp, dpTime)
 		}
 	}
 }
 
 //=============================================================================
 
-func (a *DataAggregator) Flush() {
+func (a *SimpleAggregator) Flush() {
 	if a.currDp != nil {
 		a.dataPoints = append(a.dataPoints, a.currDp)
-		a.currDp     = nil
+		a.currDp = nil
 	}
 }
 
 //=============================================================================
 
-func (a *DataAggregator) DataPoints() []*DataPoint {
+func (a *SimpleAggregator) DataPoints() []*DataPoint {
 	return a.dataPoints
 }
 
 //=============================================================================
 
-func (a *DataAggregator) Aggregate(daDes *DataAggregator) {
-	for _,dp := range a.DataPoints() {
+func (a *SimpleAggregator) Aggregate(daDes DataAggregator) {
+	for _, dp := range a.DataPoints() {
 		daDes.Add(dp)
 	}
 
@@ -109,129 +140,136 @@ func (a *DataAggregator) Aggregate(daDes *DataAggregator) {
 
 //=============================================================================
 
-func (a *DataAggregator) Clear() {
-	a.currDp     = nil
+func (a *SimpleAggregator) Clear() {
+	a.currDp = nil
 	a.dataPoints = []*DataPoint{}
 }
 
 //=============================================================================
 //===
-//=== Private methods
+//=== DailyAggregator
 //===
 //=============================================================================
 
-func (a *DataAggregator) createInitialDataPoint(dp *DataPoint) *DataPoint {
-	return &DataPoint{
-		Time        : a.timeSlotFunc(dp.Time).In(a.productLoc),
-		Open        : dp.Open,
-		High        : dp.High,
-		Low         : dp.Low,
-		Close       : dp.Close,
-		UpVolume    : dp.UpVolume,
-		DownVolume  : dp.DownVolume,
-		UpTicks     : dp.UpTicks,
-		DownTicks   : dp.DownTicks,
-		OpenInterest: dp.OpenInterest,
+type DailyAggregator struct {
+	sessionStart datatype.IntTime
+	currDp       *DataPoint
+	dataPoints   []*DataPoint
+}
+
+//=============================================================================
+
+func NewDailyAggregator(sessionStart datatype.IntTime) *DailyAggregator {
+	return &DailyAggregator{
+		sessionStart: sessionStart,
 	}
 }
 
 //=============================================================================
 
-func (a *DataAggregator) Merge(dp *DataPoint) {
-	cp := a.currDp
+func (a *DailyAggregator) BaseTimeframe() string {
+	return "5m"
+}
 
-	cp.High          = math.Max(cp.High, dp.High)
-	cp.Low           = math.Min(cp.Low,  dp.Low)
-	cp.Close         = dp.Close
-	cp.UpVolume     += dp.UpVolume
-	cp.DownVolume   += dp.DownVolume
-	cp.UpTicks      += dp.UpTicks
-	cp.DownTicks    += dp.DownTicks
+//=============================================================================
+
+func (a *DailyAggregator) TargetTimeframe() string {
+	return "1440m"
+}
+
+//=============================================================================
+
+func (a *DailyAggregator) Add(dp *DataPoint) {
+	//--- Aggregation required
+
+	dpTime := dp.Time
+
+	if a.currDp == nil {
+		a.currDp = newDataPoint(dp, dpTime)
+	} else {
+		if a.sessionIsCrossed(dpTime) {
+			a.dataPoints = append(a.dataPoints, a.currDp)
+			a.currDp = newDataPoint(dp, dpTime)
+		} else {
+			merge(a.currDp, dp)
+			a.currDp.Time = dpTime
+		}
+	}
+}
+
+//=============================================================================
+
+func (a *DailyAggregator) Flush() {
+	if a.currDp != nil {
+		a.dataPoints = append(a.dataPoints, a.currDp)
+		a.currDp = nil
+	}
+}
+
+//=============================================================================
+
+func (a *DailyAggregator) Clear() {}
+
+//=============================================================================
+
+func (a *DailyAggregator) Aggregate(daDes DataAggregator) {}
+
+//=============================================================================
+
+func (a *DailyAggregator) DataPoints() []*DataPoint {
+	return a.dataPoints
+}
+
+//=============================================================================
+
+func (a *DailyAggregator) sessionIsCrossed(dpTime time.Time) bool {
+	currTime := a.currDp.Time.Hour()*60 + a.currDp.Time.Minute()
+	sessTime := (a.sessionStart/100)*60 + (a.sessionStart % 100)
+
+	sesDelta := int(sessTime) - currTime
+	newDelta := int(dpTime.Sub(a.currDp.Time).Minutes())
+
+	//--- Exit if currTime >= sessTime
+	if sesDelta < 0 {
+		return false
+	}
+
+	//--- Ok, currTime < sessTime. Now, if sessTime < newTime there is a cross
+	return sesDelta < newDelta
+}
+
+//=============================================================================
+//===
+//=== Private functions
+//===
+//=============================================================================
+
+func merge(cp, dp *DataPoint) {
+	cp.High = math.Max(cp.High, dp.High)
+	cp.Low = math.Min(cp.Low, dp.Low)
+	cp.Close = dp.Close
+	cp.UpVolume += dp.UpVolume
+	cp.DownVolume += dp.DownVolume
+	cp.UpTicks += dp.UpTicks
+	cp.DownTicks += dp.DownTicks
 	cp.OpenInterest += dp.OpenInterest
 }
 
 //=============================================================================
-//===
-//=== Time functions
-//===
-//=============================================================================
 
-func TimeSlotFunction5m(dpTime time.Time) time.Time {
-	mins := dpTime.Minute()
-
-	if mins ==  0 { return dpTime }
-	if mins <=  5 { return dpTime.Add(time.Minute * time.Duration( 5-mins)) }
-	if mins <= 10 { return dpTime.Add(time.Minute * time.Duration(10-mins)) }
-	if mins <= 15 { return dpTime.Add(time.Minute * time.Duration(15-mins)) }
-	if mins <= 20 { return dpTime.Add(time.Minute * time.Duration(20-mins)) }
-	if mins <= 25 { return dpTime.Add(time.Minute * time.Duration(25-mins)) }
-	if mins <= 30 { return dpTime.Add(time.Minute * time.Duration(30-mins)) }
-	if mins <= 35 { return dpTime.Add(time.Minute * time.Duration(35-mins)) }
-	if mins <= 40 { return dpTime.Add(time.Minute * time.Duration(40-mins)) }
-	if mins <= 45 { return dpTime.Add(time.Minute * time.Duration(45-mins)) }
-	if mins <= 50 { return dpTime.Add(time.Minute * time.Duration(50-mins)) }
-	if mins <= 55 { return dpTime.Add(time.Minute * time.Duration(55-mins)) }
-
-	return dpTime.Add(time.Minute * time.Duration(60-mins))
-}
-
-//=============================================================================
-
-func TimeSlotFunction10m(dpTime time.Time) time.Time {
-	mins := dpTime.Minute()
-
-	if mins ==  0 { return dpTime }
-	if mins <= 10 { return dpTime.Add(time.Minute * time.Duration(10-mins)) }
-	if mins <= 20 { return dpTime.Add(time.Minute * time.Duration(20-mins)) }
-	if mins <= 30 { return dpTime.Add(time.Minute * time.Duration(30-mins)) }
-	if mins <= 40 { return dpTime.Add(time.Minute * time.Duration(40-mins)) }
-	if mins <= 50 { return dpTime.Add(time.Minute * time.Duration(50-mins)) }
-
-	return dpTime.Add(time.Minute * time.Duration(60-mins))
-}
-
-//=============================================================================
-
-func TimeSlotFunction15m(dpTime time.Time) time.Time {
-	mins := dpTime.Minute()
-
-	if mins ==  0 { return dpTime }
-	if mins <= 15 { return dpTime.Add(time.Minute * time.Duration(15-mins)) }
-	if mins <= 30 { return dpTime.Add(time.Minute * time.Duration(30-mins)) }
-	if mins <= 45 { return dpTime.Add(time.Minute * time.Duration(45-mins)) }
-
-	return dpTime.Add(time.Minute * time.Duration(60-mins))
-}
-
-//=============================================================================
-
-func TimeSlotFunction30m(dpTime time.Time) time.Time {
-	mins := dpTime.Minute()
-
-	if mins ==  0 { return dpTime }
-	if mins <= 30 { return dpTime.Add(time.Minute * time.Duration(30-mins)) }
-
-	return dpTime.Add(time.Minute * time.Duration(60-mins))
-}
-
-//=============================================================================
-
-func TimeSlotFunction60m(dpTime time.Time) time.Time {
-	mins := dpTime.Minute()
-
-	if mins ==  0 { return dpTime }
-
-	return dpTime.Add(time.Minute * time.Duration(60-mins))
-}
-
-//=============================================================================
-
-func TimeSlotFunction1440m(dpTime time.Time) time.Time {
-	hours,mins,_ := dpTime.Clock()
-
-	if mins ==  0 && hours == 0 { return dpTime }
-
-	return dpTime.Add(time.Minute * time.Duration(1440-mins-hours*60))
+func newDataPoint(dp *DataPoint, t time.Time) *DataPoint {
+	return &DataPoint{
+		Time:         t,
+		Open:         dp.Open,
+		High:         dp.High,
+		Low:          dp.Low,
+		Close:        dp.Close,
+		UpVolume:     dp.UpVolume,
+		DownVolume:   dp.DownVolume,
+		UpTicks:      dp.UpTicks,
+		DownTicks:    dp.DownTicks,
+		OpenInterest: dp.OpenInterest,
+	}
 }
 
 //=============================================================================
