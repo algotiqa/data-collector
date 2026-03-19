@@ -25,8 +25,8 @@ THE SOFTWARE.
 package inventory
 
 import (
-	"github.com/algotiqa/core/datatype"
 	"github.com/algotiqa/data-collector/pkg/db"
+	"github.com/algotiqa/types"
 )
 
 //=============================================================================
@@ -83,7 +83,7 @@ type DataProduct struct {
 	ProductType     string           `json:"productType"`
 	Months          string           `json:"months"`
 	RolloverTrigger db.DPRollTrigger `json:"rolloverTrigger"`
-	SessionStart    datatype.IntTime `json:"sessionStart"`
+	SessionStart    types.Time       `json:"sessionStart"`
 }
 
 //=============================================================================

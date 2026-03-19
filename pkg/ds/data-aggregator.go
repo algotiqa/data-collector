@@ -28,7 +28,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/algotiqa/core/datatype"
+	"github.com/algotiqa/types"
 )
 
 //=============================================================================
@@ -152,14 +152,14 @@ func (a *SimpleAggregator) Clear() {
 //=============================================================================
 
 type DailyAggregator struct {
-	sessionStart datatype.IntTime
+	sessionStart types.Time
 	currDp       *DataPoint
 	dataPoints   []*DataPoint
 }
 
 //=============================================================================
 
-func NewDailyAggregator(sessionStart datatype.IntTime) *DailyAggregator {
+func NewDailyAggregator(sessionStart types.Time) *DailyAggregator {
 	return &DailyAggregator{
 		sessionStart: sessionStart,
 	}

@@ -29,7 +29,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/algotiqa/core/datatype"
+	"github.com/algotiqa/types"
 )
 
 //=============================================================================
@@ -127,14 +127,14 @@ func parseTime(hhmm string) (int, int, error) {
 		}
 	}
 
-	return 0, 0, errors.New("Field '" + Time + "' has an invalid format")
+	return 0, 0, errors.New("field '" + Time + "' has an invalid format")
 }
 
 //=============================================================================
 
 func updateDataRange(t time.Time, r *DataRange) {
 	y, m, d := t.Date()
-	date := datatype.IntDate(y*10000 + int(m)*100 + d)
+	date := types.Date(y*10000 + int(m)*100 + d)
 
 	//--- Handle from day
 

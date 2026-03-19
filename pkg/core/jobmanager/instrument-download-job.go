@@ -29,10 +29,10 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/algotiqa/core/datatype"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/ds"
 	"github.com/algotiqa/data-collector/pkg/platform"
+	"github.com/algotiqa/types"
 )
 
 //=============================================================================
@@ -62,7 +62,7 @@ func (i *InstrumentDownLoadJob) execute(jc *JobContext) error {
 		}
 
 		job.LoadFrom = job.LoadFrom.AddDays(days)
-		today := datatype.Today(time.UTC)
+		today := types.Today(time.UTC)
 
 		if job.LoadFrom.Days(today) <= 0 {
 			//--- We will pass beyond today by 1 day, so we have to re-set LoadFrom
@@ -104,7 +104,7 @@ func processDays(jc *JobContext, uc *UserConnection, blk *db.DataBlock, job *db.
 			loadedDays = bars.Days
 
 			if !bars.NoData {
-				var firstDate, lastDate datatype.IntDate
+				var firstDate, lastDate types.Date
 				err, firstDate, lastDate = storeBars(blk, bars.Bars, prodLoc)
 				if err == nil {
 					err = updateStatus(jc, blk, job, firstDate, lastDate)
@@ -123,16 +123,16 @@ func processDays(jc *JobContext, uc *UserConnection, blk *db.DataBlock, job *db.
 
 //=============================================================================
 
-func storeBars(blk *db.DataBlock, bars []*platform.PriceBar, prodLoc *time.Location) (error, datatype.IntDate, datatype.IntDate) {
+func storeBars(blk *db.DataBlock, bars []*platform.PriceBar, prodLoc *time.Location) (error, types.Date, types.Date) {
 	var dataPoints []*ds.DataPoint
 	var dataAggreg = ds.NewSimpleAggregator(ds.NewQuantizer1mTo5m())
 
 	config := ds.NewDataConfig(blk.SystemCode, blk.Symbol)
 
-	var firstDate, lastDate datatype.IntDate
+	var firstDate, lastDate types.Date
 
 	for _, bar := range bars {
-		lastDate = datatype.ToIntDate(&bar.TimeStamp)
+		lastDate = types.ToDate(&bar.TimeStamp)
 		if firstDate.IsNil() {
 			firstDate = lastDate
 		}
@@ -166,7 +166,7 @@ func storeBars(blk *db.DataBlock, bars []*platform.PriceBar, prodLoc *time.Locat
 
 //=============================================================================
 
-func updateStatus(jc *JobContext, blk *db.DataBlock, job *db.DownloadJob, firstDate, lastDate datatype.IntDate) error {
+func updateStatus(jc *JobContext, blk *db.DataBlock, job *db.DownloadJob, firstDate, lastDate types.Date) error {
 	if blk.DataFrom.IsNil() || blk.DataFrom > firstDate {
 		blk.DataFrom = firstDate
 	}
@@ -182,7 +182,7 @@ func updateStatus(jc *JobContext, blk *db.DataBlock, job *db.DownloadJob, firstD
 
 //=============================================================================
 
-func recalcDailyBars(blk *db.DataBlock, sessionStart datatype.IntTime, prodLoc *time.Location) error {
+func recalcDailyBars(blk *db.DataBlock, sessionStart types.Time, prodLoc *time.Location) error {
 	config := ds.NewDataConfig(blk.SystemCode, blk.Symbol)
 	da5m := ds.NewSimpleAggregator(ds.NewQuantizerIdentity(5))
 

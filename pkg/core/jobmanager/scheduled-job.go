@@ -27,8 +27,8 @@ package jobmanager
 import (
 	"time"
 
-	"github.com/algotiqa/core/datatype"
 	"github.com/algotiqa/data-collector/pkg/db"
+	"github.com/algotiqa/types"
 )
 
 //=============================================================================
@@ -53,7 +53,7 @@ func (sj *ScheduledJob) IsSchedulable() bool {
 		return duration > RetryDelayHours
 	}
 
-	return sj.job.LoadFrom < datatype.Today(time.UTC)
+	return sj.job.LoadFrom < types.Today(time.UTC)
 }
 
 //=============================================================================

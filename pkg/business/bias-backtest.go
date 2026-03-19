@@ -31,7 +31,7 @@ import (
 	"github.com/algotiqa/core/auth"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/ds"
-	"github.com/algotiqa/tiq-engine/session"
+	"github.com/algotiqa/types"
 	"gorm.io/gorm"
 )
 
@@ -42,9 +42,9 @@ import (
 //=============================================================================
 
 type BiasBacktestSpec struct {
-	StopLoss   float64                 `json:"stopLoss"`
-	TakeProfit float64                 `json:"takeProfit"`
-	Session    *session.TradingSession `json:"session"`
+	StopLoss   float64               `json:"stopLoss"`
+	TakeProfit float64               `json:"takeProfit"`
+	Session    *types.TradingSession `json:"session"`
 }
 
 //=============================================================================

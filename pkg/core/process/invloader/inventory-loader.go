@@ -30,13 +30,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/algotiqa/core/datatype"
 	"github.com/algotiqa/core/msg"
 	"github.com/algotiqa/data-collector/pkg/app"
 	"github.com/algotiqa/data-collector/pkg/core/jobmanager"
 	"github.com/algotiqa/data-collector/pkg/core/messaging/collector/rollover"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/platform"
+	"github.com/algotiqa/types"
 	"gorm.io/gorm"
 )
 
@@ -279,17 +279,17 @@ func addDownloadJob(tx *gorm.DB, block *db.DataBlock, di *db.DataInstrument, dp 
 
 //=============================================================================
 
-func calcLoadFrom(expDate *time.Time) datatype.IntDate {
+func calcLoadFrom(expDate *time.Time) types.Date {
 	//--- For every instrument, we consider 1 year of data
 	old := expDate.Add(-DaysBack * 24 * time.Hour)
-	return datatype.ToIntDate(&old)
+	return types.ToDate(&old)
 }
 
 //=============================================================================
 
-func calcLoadTo(expDate *time.Time) datatype.IntDate {
+func calcLoadTo(expDate *time.Time) types.Date {
 	date := expDate.UTC()
-	return datatype.ToIntDate(&date)
+	return types.ToDate(&date)
 }
 
 //=============================================================================

@@ -27,7 +27,7 @@ package db
 import (
 	"time"
 
-	"github.com/algotiqa/core/datatype"
+	"github.com/algotiqa/types"
 )
 
 //=============================================================================
@@ -69,18 +69,18 @@ const (
 //-----------------------------------------------------------------------------
 
 type DataProduct struct {
-	Id                   uint             `json:"id" gorm:"primaryKey"`
-	Username             string           `json:"username"`
-	ConnectionCode       string           `json:"connectionCode"`
-	SystemCode           string           `json:"systemCode"`
-	Symbol               string           `json:"symbol"`
-	SupportsMultipleData bool             `json:"supportsMultipleData"`
-	Connected            bool             `json:"connected"`
-	Timezone             string           `json:"timezone"`
-	Status               DPStatus         `json:"status"`
-	Months               string           `json:"months"`
-	RolloverTrigger      DPRollTrigger    `json:"rollTrigger"`
-	SessionStart         datatype.IntTime `json:"sessionStart"`
+	Id                   uint          `json:"id" gorm:"primaryKey"`
+	Username             string        `json:"username"`
+	ConnectionCode       string        `json:"connectionCode"`
+	SystemCode           string        `json:"systemCode"`
+	Symbol               string        `json:"symbol"`
+	SupportsMultipleData bool          `json:"supportsMultipleData"`
+	Connected            bool          `json:"connected"`
+	Timezone             string        `json:"timezone"`
+	Status               DPStatus      `json:"status"`
+	Months               string        `json:"months"`
+	RolloverTrigger      DPRollTrigger `json:"rollTrigger"`
+	SessionStart         types.Time    `json:"sessionStart"`
 }
 
 //=============================================================================
@@ -124,24 +124,24 @@ type DataInstrumentFull struct {
 
 type DataInstrumentExt struct {
 	DataInstrument
-	Status     *DBStatus        `json:"status"`
-	DataFrom   datatype.IntDate `json:"dataFrom"`
-	DataTo     datatype.IntDate `json:"dataTo"`
-	Progress   *int8            `json:"progress"`
-	Global     bool             `json:"global"`
-	DjPriority int              `json:"djPriority"`
-	DjStatus   *DJStatus        `json:"djStatus"`
-	DjLoadFrom datatype.IntDate `json:"djLoadFrom"`
-	DjLoadTo   datatype.IntDate `json:"djLoadTo"`
-	DjCurrDay  int              `json:"djCurrDay"`
-	DjTotDays  int              `json:"djTotDays"`
-	DjError    string           `json:"djError"`
-	IjFilename string           `json:"ijFilename"`
-	IjRecords  int              `json:"ijRecords"`
-	IjBytes    int64            `json:"ijBytes"`
-	IjTimezone string           `json:"ijTimezone"`
-	IjParser   string           `json:"ijParser"`
-	IjError    string           `json:"ijError"`
+	Status     *DBStatus  `json:"status"`
+	DataFrom   types.Date `json:"dataFrom"`
+	DataTo     types.Date `json:"dataTo"`
+	Progress   *int8      `json:"progress"`
+	Global     bool       `json:"global"`
+	DjPriority int        `json:"djPriority"`
+	DjStatus   *DJStatus  `json:"djStatus"`
+	DjLoadFrom types.Date `json:"djLoadFrom"`
+	DjLoadTo   types.Date `json:"djLoadTo"`
+	DjCurrDay  int        `json:"djCurrDay"`
+	DjTotDays  int        `json:"djTotDays"`
+	DjError    string     `json:"djError"`
+	IjFilename string     `json:"ijFilename"`
+	IjRecords  int        `json:"ijRecords"`
+	IjBytes    int64      `json:"ijBytes"`
+	IjTimezone string     `json:"ijTimezone"`
+	IjParser   string     `json:"ijParser"`
+	IjError    string     `json:"ijError"`
 }
 
 //=============================================================================
@@ -161,15 +161,15 @@ const (
 //-----------------------------------------------------------------------------
 
 type DataBlock struct {
-	Id         uint             `json:"id" gorm:"primaryKey"`
-	SystemCode string           `json:"systemCode"`
-	Root       string           `json:"root"`
-	Symbol     string           `json:"symbol"`
-	Status     DBStatus         `json:"status"`
-	Global     bool             `json:"global"`
-	DataFrom   datatype.IntDate `json:"dataFrom"`
-	DataTo     datatype.IntDate `json:"dataTo"`
-	Progress   int8             `json:"progress"`
+	Id         uint       `json:"id" gorm:"primaryKey"`
+	SystemCode string     `json:"systemCode"`
+	Root       string     `json:"root"`
+	Symbol     string     `json:"symbol"`
+	Status     DBStatus   `json:"status"`
+	Global     bool       `json:"global"`
+	DataFrom   types.Date `json:"dataFrom"`
+	DataTo     types.Date `json:"dataTo"`
+	Progress   int8       `json:"progress"`
 }
 
 //=============================================================================
@@ -199,19 +199,19 @@ const (
 //-----------------------------------------------------------------------------
 
 type DownloadJob struct {
-	Id               uint             `json:"id" gorm:"primaryKey"`
-	DataInstrumentId uint             `json:"dataInstrumentId"`
-	DataBlockId      uint             `json:"dataBlockId"`
-	Status           DJStatus         `json:"status"`
-	LoadFrom         datatype.IntDate `json:"loadFrom"`
-	LoadTo           datatype.IntDate `json:"loadTo"`
-	Priority         int              `json:"priority"`
-	UserConnection   string           `json:"userConnection"`
-	ProductTimezone  string           `json:"productTimezone"`
-	SessionStart     datatype.IntTime `json:"sessionStart"`
-	CurrDay          int              `json:"currDay"`
-	TotDays          int              `json:"totDays"`
-	Error            string           `json:"error"`
+	Id               uint       `json:"id" gorm:"primaryKey"`
+	DataInstrumentId uint       `json:"dataInstrumentId"`
+	DataBlockId      uint       `json:"dataBlockId"`
+	Status           DJStatus   `json:"status"`
+	LoadFrom         types.Date `json:"loadFrom"`
+	LoadTo           types.Date `json:"loadTo"`
+	Priority         int        `json:"priority"`
+	UserConnection   string     `json:"userConnection"`
+	ProductTimezone  string     `json:"productTimezone"`
+	SessionStart     types.Time `json:"sessionStart"`
+	CurrDay          int        `json:"currDay"`
+	TotDays          int        `json:"totDays"`
+	Error            string     `json:"error"`
 }
 
 //=============================================================================

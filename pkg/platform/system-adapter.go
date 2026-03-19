@@ -27,8 +27,9 @@ package platform
 import (
 	"github.com/algotiqa/core"
 	"github.com/algotiqa/core/auth"
-	"github.com/algotiqa/core/datatype"
 	"github.com/algotiqa/core/req"
+	"github.com/algotiqa/types"
+
 	"strconv"
 )
 
@@ -73,7 +74,7 @@ func GetInstruments(username string, connectionCode string, root string) ([]Inst
 
 //=============================================================================
 
-func GetPriceBars(username string, connectionCode string, symbol string, date datatype.IntDate) (*PriceBars, error) {
+func GetPriceBars(username string, connectionCode string, symbol string, date types.Date) (*PriceBars, error) {
 	var res PriceBars
 
 	token, err := auth.Token()

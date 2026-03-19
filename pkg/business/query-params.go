@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/algotiqa/data-collector/pkg/ds"
+	"github.com/algotiqa/types"
 )
 
 //=============================================================================
@@ -93,7 +94,7 @@ func NewQueryParams(spec *QuerySpec) (*QueryParams, error) {
 		return nil, errors.New("Bad 'timeframe': " + spec.Timeframe + " (" + err.Error() + ")")
 	}
 
-	da, err := buildDataAggregator(timeframe)
+	da, err := buildDataAggregator(timeframe, spec.Config.DataProduct.SessionStart)
 	if err != nil {
 		return nil, errors.New("Bad 'timeframe': " + spec.Timeframe + " (" + err.Error() + ")")
 	}
@@ -204,7 +205,7 @@ func parseReduction(value string) (int, error) {
 
 //=============================================================================
 
-func buildDataAggregator(timeframe int) (ds.DataAggregator, error) {
+func buildDataAggregator(timeframe int, sessionStart types.Time) (ds.DataAggregator, error) {
 	tf := timeframe
 
 	if tf == 1 || tf == 5 || tf == 15 || tf == 60 || tf == 1440 {

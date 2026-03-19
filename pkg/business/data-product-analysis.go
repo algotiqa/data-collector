@@ -29,10 +29,10 @@ import (
 	"time"
 
 	"github.com/algotiqa/core/auth"
-	"github.com/algotiqa/core/datatype"
 	"github.com/algotiqa/core/req"
 	"github.com/algotiqa/data-collector/pkg/core"
 	"github.com/algotiqa/data-collector/pkg/ds"
+	"github.com/algotiqa/types"
 )
 
 //=============================================================================
@@ -61,12 +61,12 @@ const (
 //=============================================================================
 
 type DataProductAnalysisResponse struct {
-	Id           uint             `json:"id"`
-	Symbol       string           `json:"symbol"`
-	From         datatype.IntDate `json:"from"`
-	To           datatype.IntDate `json:"to"`
-	Days         int              `json:"days"`
-	DailyResults []*DailyResult   `json:"dailyResults"`
+	Id           uint           `json:"id"`
+	Symbol       string         `json:"symbol"`
+	From         types.Date     `json:"from"`
+	To           types.Date     `json:"to"`
+	Days         int            `json:"days"`
+	DailyResults []*DailyResult `json:"dailyResults"`
 }
 
 //=============================================================================
@@ -106,8 +106,8 @@ func AnalyzeProduct(c *auth.Context, spec *QuerySpec) (*DataProductAnalysisRespo
 	res := &DataProductAnalysisResponse{
 		Id:           spec.Id,
 		Symbol:       symbol,
-		From:         datatype.ToIntDate(params.From),
-		To:           datatype.ToIntDate(params.To),
+		From:         types.ToDate(params.From),
+		To:           types.ToDate(params.To),
 		Days:         len(dailyResults),
 		DailyResults: dailyResults,
 	}

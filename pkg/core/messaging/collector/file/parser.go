@@ -27,7 +27,7 @@ package file
 import (
 	"errors"
 
-	"github.com/algotiqa/core/datatype"
+	"github.com/algotiqa/types"
 )
 
 //=============================================================================
@@ -38,8 +38,8 @@ const TradestationName = "Tradestation (ASCII)"
 //=============================================================================
 
 type DataRange struct {
-	FromDay datatype.IntDate
-	ToDay   datatype.IntDate
+	FromDay types.Date
+	ToDay   types.Date
 }
 
 //=============================================================================
