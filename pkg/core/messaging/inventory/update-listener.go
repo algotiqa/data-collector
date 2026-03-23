@@ -77,33 +77,34 @@ func HandleUpdateMessage(m *msg.Message) bool {
 func addDataProduct(dpm *DataProductMessage) bool {
 	slog.Info("addDataProduct: Data product change received", "id", dpm.DataProduct.Id)
 
-	pd := &db.DataProduct{}
+	dp := &db.DataProduct{}
 	err := db.RunInTransaction(func(tx *gorm.DB) error {
-		pd.Id = dpm.DataProduct.Id
-		pd.Symbol = dpm.DataProduct.Symbol
-		pd.Username = dpm.DataProduct.Username
-		pd.SystemCode = dpm.Connection.SystemCode
-		pd.ConnectionCode = dpm.Connection.Code
-		pd.Connected = dpm.Connection.Connected
-		pd.SupportsMultipleData = dpm.Connection.SupportsMultipleData
-		pd.Timezone = dpm.Exchange.Timezone
-		pd.Months = dpm.DataProduct.Months
-		pd.RolloverTrigger = dpm.DataProduct.RolloverTrigger
-		pd.SessionStart = dpm.DataProduct.SessionStart
-		pd.Status = db.DPStatusReady
+		dp.Id                   = dpm.DataProduct.Id
+		dp.Symbol               = dpm.DataProduct.Symbol
+		dp.Username             = dpm.DataProduct.Username
+		dp.SystemCode           = dpm.Connection.SystemCode
+		dp.ConnectionCode       = dpm.Connection.Code
+		dp.Connected            = dpm.Connection.Connected
+		dp.SupportsMultipleData = dpm.Connection.SupportsMultipleData
+		dp.Timezone             = dpm.Exchange.Timezone
+		dp.Months               = dpm.DataProduct.Months
+		dp.RolloverTrigger      = dpm.DataProduct.RolloverTrigger
+		dp.TradingSessionId     = dpm.TradingSession.Id
+		dp.TradingSessionConfig = dpm.TradingSession.Session
+		dp.Status               = db.DPStatusReady
 
-		if !pd.SupportsMultipleData {
-			pd.Status = db.DPStatusFetchingInventory
+		if !dp.SupportsMultipleData {
+			dp.Status = db.DPStatusFetchingInventory
 		}
 
-		return db.AddDataProduct(tx, pd)
+		return db.AddDataProduct(tx, dp)
 	})
 
 	if err != nil {
 		slog.Error("Raised error while processing message")
 	} else {
-		if !pd.SupportsMultipleData {
-			jobmanager.SetConnection(pd.SystemCode, pd.Username, pd.ConnectionCode, pd.Connected)
+		if !dp.SupportsMultipleData {
+			jobmanager.SetConnection(dp.SystemCode, dp.Username, dp.ConnectionCode, dp.Connected)
 		}
 
 		slog.Info("addDataProduct: Operation complete")

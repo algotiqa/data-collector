@@ -220,8 +220,8 @@ func calcRolloverDelta(dp *db.DataProduct, curr, next *db.DataInstrumentExt, sta
 
 func getPrices(systemCode, symbol string, from time.Time) ([]*ds.DataPoint, error) {
 	config := ds.NewDataConfig(systemCode, symbol)
-	da := ds.NewSimpleAggregator(ds.NewQuantizerIdentity(60))
-	to := from.Add(5 * 24 * time.Hour)
+	da     := ds.NewIdentityAggregator(60)
+	to     := from.Add(5 * 24 * time.Hour)
 
 	err := ds.GetDataPoints(&from, &to, config, time.UTC, da)
 	if err != nil {
@@ -261,16 +261,16 @@ func updateRolledInstruments(list []*db.DataInstrumentExt) error {
 
 func convertInstrument(die *db.DataInstrumentExt) *db.DataInstrument {
 	return &db.DataInstrument{
-		Id:             die.Id,
-		DataProductId:  die.DataProductId,
-		DataBlockId:    die.DataBlockId,
-		Symbol:         die.Symbol,
-		Name:           die.Name,
+		Id            : die.Id,
+		DataProductId : die.DataProductId,
+		DataBlockId   : die.DataBlockId,
+		Symbol        : die.Symbol,
+		Name          : die.Name,
 		ExpirationDate: die.ExpirationDate,
-		RolloverDate:   die.RolloverDate,
-		Continuous:     die.Continuous,
-		Month:          die.Month,
-		RolloverDelta:  die.RolloverDelta,
+		RolloverDate  : die.RolloverDate,
+		Continuous    : die.Continuous,
+		Month         : die.Month,
+		RolloverDelta : die.RolloverDelta,
 		RolloverStatus: die.RolloverStatus,
 	}
 }

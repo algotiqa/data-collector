@@ -31,10 +31,12 @@ import (
 
 	"github.com/algotiqa/core/auth"
 	"github.com/algotiqa/core/req"
+	"github.com/algotiqa/data-collector/pkg/core"
 	"github.com/algotiqa/data-collector/pkg/core/jobmanager"
 	"github.com/algotiqa/data-collector/pkg/core/process/invloader"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/ds"
+	"github.com/algotiqa/types"
 	"gorm.io/gorm"
 )
 
@@ -49,8 +51,9 @@ func GetDataInstruments(tx *gorm.DB, c *auth.Context) (*[]db.DataInstrumentFull,
 
 //=============================================================================
 
-func CreateDataConfig(tx *gorm.DB, id uint) (*DataConfig, error) {
-	var p *db.DataProduct
+func CreateQueryConfig(tx *gorm.DB, id uint, sessionId string) (*core.QueryConfig, error) {
+	var dp *db.DataProduct
+	var session *types.TradingSession
 
 	i, err := db.GetDataInstrumentById(tx, id)
 	if err == nil {
@@ -58,18 +61,21 @@ func CreateDataConfig(tx *gorm.DB, id uint) (*DataConfig, error) {
 			return nil, req.NewNotFoundError("Data instrument not found: %d", id)
 		}
 
-		p, err = db.GetDataProductById(tx, i.DataProductId)
+		dp, err = db.GetDataProductById(tx, i.DataProductId)
 		if err == nil {
-			if p == nil {
+			if dp == nil {
 				return nil, req.NewNotFoundError("Data product not found: %d", i.DataProductId)
 			}
 
 			var instruments *[]db.DataInstrument
 			if i.VirtualInstrument {
-				instruments, err = db.GetRollingDataInstrumentsByProductIdFast(tx, p.Id, p.Months)
+				instruments, err = db.GetRollingDataInstrumentsByProductIdFast(tx, dp.Id, dp.Months)
 			}
 
-			return createConfig(i, p, instruments), nil
+			session,err = core.GetTradingSession(tx, sessionId, dp)
+			if err == nil {
+				return core.NewQueryConfig(i, dp, instruments, session), nil
+			}
 		}
 	}
 
@@ -136,7 +142,7 @@ func GetDataInstrumentDataById(c *auth.Context, spec *QuerySpec) (*DataInstrumen
 		From:             fromDate,
 		To:               toDate,
 		Timeframe:        params.Timeframe,
-		Timezone:         params.Location.String(),
+		Timezone:         params.TargetLoc.String(),
 		Reduction:        params.Reduction,
 		Reduced:          reduced,
 		NoDataForVirtual: noDataForVirtual,
@@ -220,32 +226,6 @@ func ReloadDataInstrumentData(tx *gorm.DB, c *auth.Context, id uint) (*db.Downlo
 //===
 //=============================================================================
 
-func createConfig(i *db.DataInstrument, p *db.DataProduct, instruments *[]db.DataInstrument) *DataConfig {
-	var selector any
-	var userTable bool
-
-	if p.SupportsMultipleData {
-		userTable = true
-		selector = i.Id
-	} else {
-		userTable = false
-		selector = p.SystemCode
-	}
-
-	return &DataConfig{
-		DataConfig: &ds.DataConfig{
-			UserTable: userTable,
-			Selector:  selector,
-			Symbol:    i.Symbol,
-		},
-		DataProduct:    p,
-		DataInstrument: i,
-		Instruments:    instruments,
-	}
-}
-
-//=============================================================================
-
 func reduceDataPoints(dataPoints []*ds.DataPoint, reduction int) ([]*ds.DataPoint, bool) {
 	if reduction == 0 || len(dataPoints) <= reduction {
 		return dataPoints, false
@@ -300,10 +280,10 @@ func calcDataRange(dataPoints []*ds.DataPoint) (string, string) {
 //===
 //=============================================================================
 
-func getDataPoints(params *QueryParams, config *DataConfig) ([]*ds.DataPoint, error) {
+func getDataPoints(params *QueryParams, config *core.QueryConfig) ([]*ds.DataPoint, error) {
 	if !config.DataInstrument.VirtualInstrument {
-		err := ds.GetDataPoints(params.From, params.To, config.DataConfig, params.Location, params.Aggregator)
-		return params.Aggregator.DataPoints(), err
+		err := ds.GetDataPoints(params.From, params.To, config.DataConfig, params.ProductLoc, params.Aggregator)
+		return params.Aggregator.ToTimezone(params.TargetLoc).DataPoints(), err
 	}
 
 	//--- Querying the virtual instrument. We need to split into several queries
@@ -315,9 +295,9 @@ func getDataPoints(params *QueryParams, config *DataConfig) ([]*ds.DataPoint, er
 
 	cumulateDeltas(chunks)
 
-	from := params.From
+	from    := params.From
 	dconfig := config.DataConfig
-	aggreg := ds.NewSimpleAggregator(nil)
+	aggreg  := ds.NewSimpleAggregator(nil)
 
 	for i, c := range *chunks {
 		to := &c.RolloverDate
@@ -326,7 +306,7 @@ func getDataPoints(params *QueryParams, config *DataConfig) ([]*ds.DataPoint, er
 		}
 
 		dconfig.Symbol = c.Symbol
-		err := ds.GetDataPoints(from, to, dconfig, params.Location, params.Aggregator)
+		err := ds.GetDataPoints(from, to, dconfig, params.ProductLoc, params.Aggregator)
 		if err != nil {
 			return nil, err
 		}
@@ -340,7 +320,7 @@ func getDataPoints(params *QueryParams, config *DataConfig) ([]*ds.DataPoint, er
 		}
 	}
 
-	return aggreg.DataPoints(), nil
+	return aggreg.ToTimezone(params.TargetLoc).DataPoints(), nil
 }
 
 //=============================================================================
@@ -416,9 +396,9 @@ func cumulateDeltas(chunks *[]*QueryChunk) {
 
 func shiftDataPoints(source, destin ds.DataAggregator, delta float64) {
 	for _, dp := range source.DataPoints() {
-		dp.Open += delta
-		dp.High += delta
-		dp.Low += delta
+		dp.Open  += delta
+		dp.High  += delta
+		dp.Low   += delta
 		dp.Close += delta
 
 		destin.Add(dp)

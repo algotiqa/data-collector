@@ -136,26 +136,17 @@ type BiasConfig struct {
 //-----------------------------------------------------------------------------
 
 func (bc *BiasConfig) FromBiasConfig(dbc *db.BiasConfig) {
-	bc.Id = dbc.Id
+	bc.Id             = dbc.Id
 	bc.BiasAnalysisId = dbc.BiasAnalysisId
-	bc.StartDay = dbc.StartDay
-	bc.StartSlot = dbc.StartSlot
-	bc.EndDay = dbc.EndDay
-	bc.EndSlot = dbc.EndSlot
-	bc.Months = core.DecodeMonths(dbc.Months)
-	bc.Excludes = core.DecodeExcludes(dbc.Excludes)
-	bc.Operation = dbc.Operation
-	bc.GrossProfit = dbc.GrossProfit
-	bc.NetProfit = dbc.NetProfit
-}
-
-//=============================================================================
-
-type DataConfig struct {
-	DataConfig     *ds.DataConfig
-	DataProduct    *db.DataProduct
-	DataInstrument *db.DataInstrument
-	Instruments    *[]db.DataInstrument
+	bc.StartDay       = dbc.StartDay
+	bc.StartSlot      = dbc.StartSlot
+	bc.EndDay         = dbc.EndDay
+	bc.EndSlot        = dbc.EndSlot
+	bc.Months         = core.DecodeMonths(dbc.Months)
+	bc.Excludes       = core.DecodeExcludes(dbc.Excludes)
+	bc.Operation      = dbc.Operation
+	bc.GrossProfit    = dbc.GrossProfit
+	bc.NetProfit      = dbc.NetProfit
 }
 
 //=============================================================================

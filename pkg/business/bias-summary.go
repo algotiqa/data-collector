@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/data-collector/pkg/core"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/ds"
 	"gorm.io/gorm"
@@ -39,7 +40,7 @@ type BiasSummaryResponse struct {
 	BiasAnalysis  *db.BiasAnalysis     `json:"biasAnalysis"`
 	BrokerProduct *db.BrokerProduct    `json:"brokerProduct"`
 	Result        [7]*DataPointDowList `json:"result"`
-	config        *DataConfig
+	config        *core.QueryConfig
 }
 
 //-----------------------------------------------------------------------------
@@ -117,8 +118,8 @@ func GetBiasSummaryInfo(tx *gorm.DB, c *auth.Context, id uint) (*BiasSummaryResp
 		return nil, err
 	}
 
-	var config *DataConfig
-	config, err = CreateDataConfig(tx, ba.DataInstrumentId)
+	var config *core.QueryConfig
+	config, err = CreateQueryConfig(tx, ba.DataInstrumentId, "")
 	if err != nil {
 		return nil, err
 	}
@@ -151,10 +152,11 @@ func GetBiasSummaryData(c *auth.Context, id uint, bsr *BiasSummaryResponse) erro
 	da := ds.NewSimpleAggregator(ds.NewQuantizer15mTo30m())
 
 	params := &QueryParams{
-		Location:   loc,
-		From:       nil,
-		To:         nil,
-		Reduction:  0,
+		TargetLoc : loc,
+		ProductLoc: loc,
+		From      : nil,
+		To        : nil,
+		Reduction : 0,
 		Aggregator: da,
 	}
 

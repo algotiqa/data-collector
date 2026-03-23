@@ -55,6 +55,11 @@ func (i *InstrumentDownLoadJob) execute(jc *JobContext) error {
 		return err
 	}
 
+	session, err := types.NewTradingSession(job.Session)
+	if err != nil {
+		return err
+	}
+
 	for job.LoadFrom <= job.LoadTo {
 		days, errx := processDays(jc, uc, blk, job, prodLoc)
 		if errx != nil {
@@ -68,7 +73,7 @@ func (i *InstrumentDownLoadJob) execute(jc *JobContext) error {
 			//--- We will pass beyond today by 1 day, so we have to re-set LoadFrom
 			job.LoadFrom = today
 			jc.GoToSleep()
-			return recalcDailyBars(blk, job.SessionStart, prodLoc)
+			return recalcDailyBars(blk, session, prodLoc)
 		}
 
 		if days == 0 {
@@ -82,7 +87,7 @@ func (i *InstrumentDownLoadJob) execute(jc *JobContext) error {
 		}
 	}
 
-	err = recalcDailyBars(blk, job.SessionStart, prodLoc)
+	err = recalcDailyBars(blk, session, prodLoc)
 	slog.Info("DownloadJob: Ending job", "systemCode", blk.SystemCode, "root", blk.Root, "symbol", blk.Symbol, "jobId", job.Id)
 	return err
 }
@@ -182,16 +187,16 @@ func updateStatus(jc *JobContext, blk *db.DataBlock, job *db.DownloadJob, firstD
 
 //=============================================================================
 
-func recalcDailyBars(blk *db.DataBlock, sessionStart types.Time, prodLoc *time.Location) error {
+func recalcDailyBars(blk *db.DataBlock, session *types.TradingSession, prodLoc *time.Location) error {
 	config := ds.NewDataConfig(blk.SystemCode, blk.Symbol)
-	da5m := ds.NewSimpleAggregator(ds.NewQuantizerIdentity(5))
+	da5m   := ds.NewIdentityAggregator(5)
 
 	err := ds.GetDataPoints(nil, nil, config, prodLoc, da5m)
 	if err != nil {
 		return err
 	}
 
-	da1440m := ds.NewDailyAggregator(sessionStart)
+	da1440m := ds.NewDailyAggregator(session)
 	da5m.Aggregate(da1440m)
 	return ds.SaveAggregate(da1440m, config)
 }

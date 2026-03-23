@@ -25,7 +25,6 @@ THE SOFTWARE.
 package ds
 
 import (
-	"strconv"
 	"time"
 )
 
@@ -42,42 +41,6 @@ type Quantizer interface {
 	// Quantize maps the dpTime (which is always in the data product's timezone)
 	// into a quantized version used for aggregation
 	Quantize(dpTime time.Time) time.Time
-}
-
-//=============================================================================
-//===
-//=== Identity quantization
-//===
-//=============================================================================
-
-type QuantizerIdentity struct {
-	baseTimeframe string
-}
-
-//=============================================================================
-
-func NewQuantizerIdentity(baseTimeframe int) Quantizer {
-	return &QuantizerIdentity{
-		baseTimeframe: strconv.Itoa(baseTimeframe) + "m",
-	}
-}
-
-//=============================================================================
-
-func (f *QuantizerIdentity) BaseTimeframe() string {
-	return f.baseTimeframe
-}
-
-//=============================================================================
-
-func (f *QuantizerIdentity) TargetTimeframe() string {
-	return f.baseTimeframe
-}
-
-//=============================================================================
-
-func (f *QuantizerIdentity) Quantize(dpTime time.Time) time.Time {
-	return dpTime
 }
 
 //=============================================================================
@@ -146,59 +109,6 @@ func (f *Quantizer1mTo5m) Quantize(dpTime time.Time) time.Time {
 	}
 	if mins <= 55 {
 		return dpTime.Add(time.Minute * time.Duration(55-mins))
-	}
-
-	return dpTime.Add(time.Minute * time.Duration(60-mins))
-}
-
-//=============================================================================
-//===
-//=== 5m to 10m quantization
-//===
-//=============================================================================
-
-type Quantizer5mTo10m struct{}
-
-//=============================================================================
-
-func NewQuantizer5mTo10m() Quantizer {
-	return &Quantizer5mTo10m{}
-}
-
-//=============================================================================
-
-func (f *Quantizer5mTo10m) BaseTimeframe() string {
-	return "5m"
-}
-
-//=============================================================================
-
-func (f *Quantizer5mTo10m) TargetTimeframe() string {
-	return "10m"
-}
-
-//=============================================================================
-
-func (f *Quantizer5mTo10m) Quantize(dpTime time.Time) time.Time {
-	mins := dpTime.Minute()
-
-	if mins == 0 {
-		return dpTime
-	}
-	if mins <= 10 {
-		return dpTime.Add(time.Minute * time.Duration(10-mins))
-	}
-	if mins <= 20 {
-		return dpTime.Add(time.Minute * time.Duration(20-mins))
-	}
-	if mins <= 30 {
-		return dpTime.Add(time.Minute * time.Duration(30-mins))
-	}
-	if mins <= 40 {
-		return dpTime.Add(time.Minute * time.Duration(40-mins))
-	}
-	if mins <= 50 {
-		return dpTime.Add(time.Minute * time.Duration(50-mins))
 	}
 
 	return dpTime.Add(time.Minute * time.Duration(60-mins))
@@ -328,119 +238,6 @@ func (f *Quantizer15mTo60m) Quantize(dpTime time.Time) time.Time {
 	}
 
 	return dpTime.Add(time.Minute * time.Duration(60-mins))
-}
-
-//=============================================================================
-//===
-//=== 60m to 1440m quantization
-//===
-//=============================================================================
-
-type Quantizer60mTo1440m struct{}
-
-//=============================================================================
-
-func NewQuantizer60mTo1440m() Quantizer {
-	return &Quantizer60mTo1440m{}
-}
-
-//=============================================================================
-
-func (f *Quantizer60mTo1440m) BaseTimeframe() string {
-	return "60m"
-}
-
-//=============================================================================
-
-func (f *Quantizer60mTo1440m) TargetTimeframe() string {
-	return "1440m"
-}
-
-//=============================================================================
-
-func (f *Quantizer60mTo1440m) Quantize(dpTime time.Time) time.Time {
-	hours, mins, _ := dpTime.Clock()
-
-	if mins == 0 && hours == 0 {
-		return dpTime
-	}
-
-	return dpTime.Add(time.Minute * time.Duration(1440-mins-hours*60))
-}
-
-//=============================================================================
-//===
-//=== 5m to 1440m quantization
-//===
-//=============================================================================
-
-type Quantizer5mTo1440m struct{}
-
-//=============================================================================
-
-func NewQuantizer5mTo1440m() Quantizer {
-	return &Quantizer5mTo1440m{}
-}
-
-//=============================================================================
-
-func (f *Quantizer5mTo1440m) BaseTimeframe() string {
-	return "5m"
-}
-
-//=============================================================================
-
-func (f *Quantizer5mTo1440m) TargetTimeframe() string {
-	return "1440m"
-}
-
-//=============================================================================
-
-func (f *Quantizer5mTo1440m) Quantize(dpTime time.Time) time.Time {
-	hours, mins, _ := dpTime.Clock()
-
-	if mins == 0 && hours == 0 {
-		return dpTime
-	}
-
-	return dpTime.Add(time.Minute * time.Duration(1440-mins-hours*60))
-}
-
-//=============================================================================
-//===
-//=== 1m to generic quantization
-//===
-//=============================================================================
-
-type Quantizer1mToGeneric struct {
-	Target int
-}
-
-//=============================================================================
-
-func NewQuantizer1mToGeneric(target int) Quantizer {
-	return &Quantizer1mToGeneric{
-		Target: target,
-	}
-}
-
-//=============================================================================
-
-func (f *Quantizer1mToGeneric) BaseTimeframe() string {
-	return "1m"
-}
-
-//=============================================================================
-
-func (f *Quantizer1mToGeneric) TargetTimeframe() string {
-	return strconv.Itoa(f.Target) + "m"
-}
-
-//=============================================================================
-
-func (f *Quantizer1mToGeneric) Quantize(dpTime time.Time) time.Time {
-	//TODO:
-	return dpTime
 }
 
 //=============================================================================

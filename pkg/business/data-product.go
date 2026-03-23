@@ -31,43 +31,49 @@ import (
 	"github.com/algotiqa/core/auth"
 	"github.com/algotiqa/core/msg"
 	"github.com/algotiqa/core/req"
+	"github.com/algotiqa/data-collector/pkg/core"
 	"github.com/algotiqa/data-collector/pkg/db"
+	"github.com/algotiqa/types"
 	"gorm.io/gorm"
 )
 
 //=============================================================================
 
-func GetDataInstrumentsByProductId(tx *gorm.DB, c *auth.Context, productId uint, stored bool) (*[]db.DataInstrumentExt, error) {
+func GetDataInstrumentsByProductId(c *auth.Context, tx *gorm.DB, productId uint, stored bool) (*[]db.DataInstrumentExt, error) {
 	return db.GetDataInstrumentsByProductIdFull(tx, productId, stored)
 }
 
 //=============================================================================
 
-func CreateDataConfigForProduct(c *auth.Context, tx *gorm.DB, id uint) (*DataConfig, error) {
+func CreateQueryConfigForProduct(c *auth.Context, tx *gorm.DB, id uint, sessionId string) (*core.QueryConfig, error) {
 	var i *db.DataInstrument
+	var session *types.TradingSession
 
-	p, err := getDataProductAndCheckAccess(tx, c, id, "CreateDataConfigForProduct")
+	dp, err := getDataProductAndCheckAccess(tx, c, id, "CreateDataConfigForProduct")
 	if err == nil {
-		if p == nil {
+		if dp == nil {
 			return nil, req.NewNotFoundError("data product not found: %d", id)
 		}
 
-		i, err = db.GetVirtualDataInstrumentByProductId(tx, p.Id)
+		i, err = db.GetVirtualDataInstrumentByProductId(tx, dp.Id)
 		if err == nil {
-			if i != nil {
-				var instruments *[]db.DataInstrument
-				instruments, err = db.GetRollingDataInstrumentsByProductIdFast(tx, p.Id, p.Months)
-				if err == nil {
-					return createConfig(i, p, instruments), nil
-				}
-			} else {
-				i, err = db.GetContinuousDataInstrumentByProductId(tx, p.Id)
-				if err == nil {
-					if i != nil {
-						return createConfig(i, p, nil), nil
+			session,err = core.GetTradingSession(tx, sessionId, dp)
+			if err == nil {
+				if i != nil {
+					var instruments *[]db.DataInstrument
+					instruments, err = db.GetRollingDataInstrumentsByProductIdFast(tx, dp.Id, dp.Months)
+					if err == nil {
+						return core.NewQueryConfig(i, dp, instruments, session), nil
 					}
+				} else {
+					i, err = db.GetContinuousDataInstrumentByProductId(tx, dp.Id)
+					if err == nil {
+						if i != nil {
+							return core.NewQueryConfig(i, dp, nil, session), nil
+						}
 
-					return nil, req.NewBadRequestError("no continuous or virtual data instrument found for : %v", p.Symbol)
+						return nil, req.NewBadRequestError("no continuous or virtual data instrument found for : %v", dp.Symbol)
+					}
 				}
 			}
 		}

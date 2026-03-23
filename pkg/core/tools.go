@@ -25,8 +25,25 @@ THE SOFTWARE.
 package core
 
 import (
+	"errors"
+	"strconv"
 	"strings"
+
+	"github.com/algotiqa/data-collector/pkg/db"
+	"github.com/algotiqa/data-collector/pkg/ds"
+	"github.com/algotiqa/types"
+	"gorm.io/gorm"
 )
+
+//=============================================================================
+
+type QueryConfig struct {
+	DataConfig     *ds.DataConfig
+	DataProduct    *db.DataProduct
+	DataInstrument *db.DataInstrument
+	Instruments    *[]db.DataInstrument
+	TradingSession *types.TradingSession
+}
 
 //=============================================================================
 //===
@@ -96,6 +113,61 @@ func DecodeExcludes(value string) []string {
 
 func Trunc2d(value float64) float64 {
 	return float64(int(value * 100)) / 100
+}
+
+//=============================================================================
+//===
+//=== Query config & trading session
+//===
+//=============================================================================
+
+func NewQueryConfig(i *db.DataInstrument, p *db.DataProduct, instruments *[]db.DataInstrument,
+					session *types.TradingSession) *QueryConfig {
+	var selector any
+	var userTable bool
+
+	if p.SupportsMultipleData {
+		userTable = true
+		selector = i.Id
+	} else {
+		userTable = false
+		selector = p.SystemCode
+	}
+
+	return &QueryConfig{
+		DataConfig: &ds.DataConfig{
+			UserTable: userTable,
+			Selector : selector,
+			Symbol   : i.Symbol,
+		},
+		DataProduct   : p,
+		DataInstrument: i,
+		Instruments   : instruments,
+		TradingSession: session,
+	}
+}
+
+//=============================================================================
+
+func GetTradingSession(tx *gorm.DB, id string, dp *db.DataProduct) (*types.TradingSession, error) {
+	if id == "" || id == "0" {
+		return types.NewTradingSession(dp.TradingSessionConfig)
+	}
+
+	sessId,err := strconv.Atoi(id)
+	if err != nil {
+		return nil, err
+	}
+
+	ts,err1 := db.GetTradingSessionById(tx, uint(sessId))
+	if err1 != nil {
+		return nil, err1
+	}
+	if ts == nil {
+		return nil, errors.New("trading session not found: "+strconv.Itoa(sessId))
+	}
+
+	return types.NewTradingSession(ts.Session)
 }
 
 //=============================================================================

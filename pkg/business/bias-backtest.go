@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/data-collector/pkg/core"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/ds"
 	"github.com/algotiqa/types"
@@ -54,7 +55,7 @@ type BiasBacktestResponse struct {
 	BrokerProduct     *db.BrokerProduct   `json:"brokerProduct"`
 	Spec              *BiasBacktestSpec   `json:"spec"`
 	BacktestedConfigs []*BacktestedConfig `json:"backtestedConfigs"`
-	config            *DataConfig
+	config            *core.QueryConfig
 }
 
 //=============================================================================
@@ -77,8 +78,8 @@ func GetBacktestInfo(tx *gorm.DB, c *auth.Context, id uint, spec *BiasBacktestSp
 		return nil, err2
 	}
 
-	var config *DataConfig
-	config, err = CreateDataConfig(tx, ba.DataInstrumentId)
+	var config *core.QueryConfig
+	config, err = CreateQueryConfig(tx, ba.DataInstrumentId, "")
 	if err != nil {
 		c.Log.Error("GetBacktestInfo: Could not create data config", "error", err.Error())
 		return nil, err

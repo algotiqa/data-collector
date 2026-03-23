@@ -54,8 +54,8 @@ type JobContext struct {
 func NewJobContext(uc *UserConnection, cache *AdapterCache, resuming bool) *JobContext {
 	return &JobContext{
 		userConnection: uc,
-		cache:          cache,
-		resuming:       resuming,
+		cache         : cache,
+		resuming      : resuming,
 	}
 }
 

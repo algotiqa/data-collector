@@ -131,7 +131,7 @@ func NewDataConfig(systemCode, symbol string) *DataConfig {
 
 //=============================================================================
 
-func GetDataPoints(from *time.Time, to *time.Time, config *DataConfig, loc *time.Location, da DataAggregator) error {
+func GetDataPoints(from *time.Time, to *time.Time, config *DataConfig, prodLoc *time.Location, da DataAggregator) error {
 	if from == nil {
 		from = &DefaultFrom
 	}
@@ -156,7 +156,8 @@ func GetDataPoints(from *time.Time, to *time.Time, config *DataConfig, loc *time
 			return req.NewServerErrorByError(err)
 		}
 
-		dp.Time = dp.Time.In(loc)
+		//--- Call aggregator in data product's timezone so the aggregator can work with the session
+		dp.Time = dp.Time.In(prodLoc)
 		da.Add(&dp)
 	}
 

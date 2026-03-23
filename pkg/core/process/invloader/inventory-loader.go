@@ -69,15 +69,15 @@ func Init(cfg *app.Config) *time.Ticker {
 func CreateDownloadJob(di *db.DataInstrument, blk *db.DataBlock, priority int, dp *db.DataProduct) *db.DownloadJob {
 	return &db.DownloadJob{
 		DataInstrumentId: di.Id,
-		DataBlockId:      blk.Id,
-		LoadFrom:         calcLoadFrom(di.ExpirationDate),
-		LoadTo:           calcLoadTo(di.ExpirationDate),
-		CurrDay:          0,
-		TotDays:          int(DaysBack),
-		Status:           db.DJStatusWaiting,
-		Priority:         priority,
-		ProductTimezone:  dp.Timezone,
-		SessionStart:     dp.SessionStart,
+		DataBlockId     : blk.Id,
+		LoadFrom        : calcLoadFrom(di.ExpirationDate),
+		LoadTo          : calcLoadTo(di.ExpirationDate),
+		CurrDay         : 0,
+		TotDays         : int(DaysBack),
+		Status          : db.DJStatusWaiting,
+		Priority        : priority,
+		ProductTimezone : dp.Timezone,
+		Session         : dp.TradingSessionConfig,
 	}
 }
 
@@ -312,12 +312,12 @@ func sendRollRecalcMessage(id uint) error {
 
 func addVirtualInstrument(tx *gorm.DB, dp *db.DataProduct) error {
 	di := &db.DataInstrument{
-		DataProductId:     dp.Id,
-		Symbol:            "#" + dp.Symbol,
-		Name:              dp.Symbol + " [Virtual instrument]",
-		Continuous:        true,
+		DataProductId    : dp.Id,
+		Symbol           : "#" + dp.Symbol,
+		Name             : dp.Symbol + " [Virtual instrument]",
+		Continuous       : true,
 		VirtualInstrument: true,
-		RolloverStatus:    db.DIRollStatusWaiting,
+		RolloverStatus   : db.DIRollStatusWaiting,
 	}
 
 	return db.AddDataInstrument(tx, di)

@@ -26,6 +26,7 @@ package ds
 
 import (
 	"math"
+	"strconv"
 	"time"
 
 	"github.com/algotiqa/types"
@@ -47,6 +48,78 @@ type DataAggregator interface {
 	Clear()
 	Aggregate(daDes DataAggregator)
 	DataPoints() []*DataPoint
+	ToTimezone(loc *time.Location) DataAggregator
+}
+
+//=============================================================================
+//===
+//=== Abstract aggregator
+//===
+//=============================================================================
+
+type AbstractAggregator struct {
+	currDp     *DataPoint
+	dataPoints []*DataPoint
+}
+
+//=============================================================================
+
+func (a *AbstractAggregator) BaseTimeframe() string {
+	panic("abstract method")
+}
+
+//=============================================================================
+
+func (a *AbstractAggregator) TargetTimeframe() string {
+	panic("abstract method")
+}
+
+//=============================================================================
+
+func (a *AbstractAggregator) Add(dp *DataPoint) {
+	panic("abstract method")
+}
+
+//=============================================================================
+
+func (a *AbstractAggregator) Flush() {
+	if a.currDp != nil {
+		a.dataPoints = append(a.dataPoints, a.currDp)
+		a.currDp     = nil
+	}
+}
+
+//=============================================================================
+
+func (a *AbstractAggregator) Clear() {
+	a.currDp     = nil
+	a.dataPoints = []*DataPoint{}
+}
+
+//=============================================================================
+
+func (a *AbstractAggregator) Aggregate(daDes DataAggregator) {
+	for _, dp := range a.DataPoints() {
+		daDes.Add(dp)
+	}
+
+	daDes.Flush()
+}
+
+//=============================================================================
+
+func (a *AbstractAggregator) DataPoints() []*DataPoint {
+	return a.dataPoints
+}
+
+//=============================================================================
+
+func (a *AbstractAggregator) ToTimezone(loc *time.Location) DataAggregator {
+	for _, dp := range a.DataPoints() {
+		dp.Time = dp.Time.In(loc)
+	}
+
+	return a
 }
 
 //=============================================================================
@@ -56,25 +129,21 @@ type DataAggregator interface {
 //=============================================================================
 
 type SimpleAggregator struct {
-	currDp     *DataPoint
-	dataPoints []*DataPoint
+	AbstractAggregator
 	quantizer  Quantizer
 }
 
 //=============================================================================
 
 func NewSimpleAggregator(q Quantizer) *SimpleAggregator {
-	da := &SimpleAggregator{}
-	da.dataPoints = []*DataPoint{}
-	da.quantizer = q
-
-	return da
+	return &SimpleAggregator{
+		AbstractAggregator: AbstractAggregator{
+			dataPoints: []*DataPoint{},
+		},
+		quantizer: q,
+	}
 }
 
-//=============================================================================
-//===
-//=== Public methods
-//===
 //=============================================================================
 
 func (a *SimpleAggregator) BaseTimeframe() string {
@@ -114,35 +183,82 @@ func (a *SimpleAggregator) Add(dp *DataPoint) {
 }
 
 //=============================================================================
+//===
+//=== StandardAggregator
+//===
+//=============================================================================
 
-func (a *SimpleAggregator) Flush() {
-	if a.currDp != nil {
-		a.dataPoints = append(a.dataPoints, a.currDp)
-		a.currDp = nil
+type StandardAggregator struct {
+	AbstractAggregator
+	session   *types.TradingSession
+	firstTime time.Time
+	base      int
+	target    int
+}
+
+//=============================================================================
+
+func NewStandardAggregator(session *types.TradingSession, baseTimeframe, targetTimeframe int) *StandardAggregator {
+	return &StandardAggregator{
+		AbstractAggregator: AbstractAggregator{
+			dataPoints: []*DataPoint{},
+		},
+		session: session,
+		base   : baseTimeframe,
+		target : targetTimeframe,
 	}
 }
 
 //=============================================================================
 
-func (a *SimpleAggregator) DataPoints() []*DataPoint {
-	return a.dataPoints
+func NewIdentityAggregator(timeframe int) *StandardAggregator {
+	return NewStandardAggregator(nil, timeframe, timeframe)
 }
 
 //=============================================================================
 
-func (a *SimpleAggregator) Aggregate(daDes DataAggregator) {
-	for _, dp := range a.DataPoints() {
-		daDes.Add(dp)
+func (a *StandardAggregator) BaseTimeframe() string {
+	return strconv.Itoa(a.base) +"m"
+}
+
+//=============================================================================
+
+func (a *StandardAggregator) TargetTimeframe() string {
+	return strconv.Itoa(a.base) +"m"
+}
+
+//=============================================================================
+
+func (a *StandardAggregator) Add(dp *DataPoint) {
+	dpTime := dp.Time
+
+	if a.currDp == nil {
+		a.currDp    = newDataPoint(dp, dpTime)
+		a.firstTime = dpTime
+	} else {
+		crossSlots := false
+		if a.session != nil {
+			crossSlots = a.session.CrossSlots(a.currDp.Time, dpTime)
+		}
+
+		if crossSlots || a.maxBarReached(dpTime) {
+			a.dataPoints = append(a.dataPoints, a.currDp)
+			a.currDp     = newDataPoint(dp, dpTime)
+			a.firstTime  = dpTime
+		} else {
+			merge(a.currDp, dp)
+			a.currDp.Time = dpTime
+		}
 	}
-
-	daDes.Flush()
 }
 
 //=============================================================================
 
-func (a *SimpleAggregator) Clear() {
-	a.currDp = nil
-	a.dataPoints = []*DataPoint{}
+func (a *StandardAggregator) maxBarReached(newTime time.Time) bool {
+	currBarSize := int(newTime.Unix() - a.firstTime.Unix())
+	maxBarSize  := (a.target - a.base) * 60
+
+	return (currBarSize > maxBarSize) || maxBarSize == 0
 }
 
 //=============================================================================
@@ -152,16 +268,18 @@ func (a *SimpleAggregator) Clear() {
 //=============================================================================
 
 type DailyAggregator struct {
-	sessionStart types.Time
-	currDp       *DataPoint
-	dataPoints   []*DataPoint
+	AbstractAggregator
+	session *types.TradingSession
 }
 
 //=============================================================================
 
-func NewDailyAggregator(sessionStart types.Time) *DailyAggregator {
+func NewDailyAggregator(session *types.TradingSession) *DailyAggregator {
 	return &DailyAggregator{
-		sessionStart: sessionStart,
+		AbstractAggregator: AbstractAggregator{
+			dataPoints: []*DataPoint{},
+		},
+		session: session,
 	}
 }
 
@@ -180,14 +298,14 @@ func (a *DailyAggregator) TargetTimeframe() string {
 //=============================================================================
 
 func (a *DailyAggregator) Add(dp *DataPoint) {
-	//--- Aggregation required
+	//--- Aggregation required. Data is 5m bars
 
 	dpTime := dp.Time
 
 	if a.currDp == nil {
 		a.currDp = newDataPoint(dp, dpTime)
 	} else {
-		if a.sessionIsCrossed(dpTime) {
+		if a.session.CrossSessions(a.currDp.Time, dpTime) {
 			a.dataPoints = append(a.dataPoints, a.currDp)
 			a.currDp = newDataPoint(dp, dpTime)
 		} else {
@@ -198,60 +316,19 @@ func (a *DailyAggregator) Add(dp *DataPoint) {
 }
 
 //=============================================================================
-
-func (a *DailyAggregator) Flush() {
-	if a.currDp != nil {
-		a.dataPoints = append(a.dataPoints, a.currDp)
-		a.currDp = nil
-	}
-}
-
-//=============================================================================
-
-func (a *DailyAggregator) Clear() {}
-
-//=============================================================================
-
-func (a *DailyAggregator) Aggregate(daDes DataAggregator) {}
-
-//=============================================================================
-
-func (a *DailyAggregator) DataPoints() []*DataPoint {
-	return a.dataPoints
-}
-
-//=============================================================================
-
-func (a *DailyAggregator) sessionIsCrossed(dpTime time.Time) bool {
-	currTime := a.currDp.Time.Hour()*60 + a.currDp.Time.Minute()
-	sessTime := (a.sessionStart/100)*60 + (a.sessionStart % 100)
-
-	sesDelta := int(sessTime) - currTime
-	newDelta := int(dpTime.Sub(a.currDp.Time).Minutes())
-
-	//--- Exit if currTime >= sessTime
-	if sesDelta < 0 {
-		return false
-	}
-
-	//--- Ok, currTime < sessTime. Now, if sessTime < newTime there is a cross
-	return sesDelta < newDelta
-}
-
-//=============================================================================
 //===
 //=== Private functions
 //===
 //=============================================================================
 
 func merge(cp, dp *DataPoint) {
-	cp.High = math.Max(cp.High, dp.High)
-	cp.Low = math.Min(cp.Low, dp.Low)
-	cp.Close = dp.Close
-	cp.UpVolume += dp.UpVolume
-	cp.DownVolume += dp.DownVolume
-	cp.UpTicks += dp.UpTicks
-	cp.DownTicks += dp.DownTicks
+	cp.High          = math.Max(cp.High, dp.High)
+	cp.Low           = math.Min(cp.Low, dp.Low)
+	cp.Close         = dp.Close
+	cp.UpVolume     += dp.UpVolume
+	cp.DownVolume   += dp.DownVolume
+	cp.UpTicks      += dp.UpTicks
+	cp.DownTicks    += dp.DownTicks
 	cp.OpenInterest += dp.OpenInterest
 }
 
@@ -259,15 +336,15 @@ func merge(cp, dp *DataPoint) {
 
 func newDataPoint(dp *DataPoint, t time.Time) *DataPoint {
 	return &DataPoint{
-		Time:         t,
-		Open:         dp.Open,
-		High:         dp.High,
-		Low:          dp.Low,
-		Close:        dp.Close,
-		UpVolume:     dp.UpVolume,
-		DownVolume:   dp.DownVolume,
-		UpTicks:      dp.UpTicks,
-		DownTicks:    dp.DownTicks,
+		Time        : t,
+		Open        : dp.Open,
+		High        : dp.High,
+		Low         : dp.Low,
+		Close       : dp.Close,
+		UpVolume    : dp.UpVolume,
+		DownVolume  : dp.DownVolume,
+		UpTicks     : dp.UpTicks,
+		DownTicks   : dp.DownTicks,
 		OpenInterest: dp.OpenInterest,
 	}
 }

@@ -29,8 +29,10 @@ import (
 	"time"
 
 	"github.com/algotiqa/data-collector/pkg/business"
+	"github.com/algotiqa/data-collector/pkg/core"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/ds"
+	"github.com/algotiqa/types"
 	"gorm.io/gorm"
 )
 
@@ -151,11 +153,11 @@ func retrieveLocation(timezone string) (*time.Location, error) {
 
 //=============================================================================
 
-func retrieveConfig(id uint) (*business.DataConfig, error) {
-	var config *business.DataConfig
+func retrieveConfig(id uint) (*core.QueryConfig, error) {
+	var config *core.QueryConfig
 
 	err := db.RunInTransaction(func(tx *gorm.DB) error {
-		cfg, err := business.CreateDataConfig(tx, id)
+		cfg, err := business.CreateQueryConfig(tx, id, "")
 		config = cfg
 		return err
 	})
@@ -214,10 +216,14 @@ func setJobInError(err error, job *db.IngestionJob, block *db.DataBlock) {
 func calcAggregates(context *ParserContext) error {
 	da5m := context.DataAggreg
 	config := context.Config
+	session,err := types.NewTradingSession(config.DataProduct.TradingSessionConfig)
+	if err != nil {
+		return err
+	}
 
-	err := ds.BuildAggregates(da5m, config.DataConfig)
+	err = ds.BuildAggregates(da5m, config.DataConfig)
 	if err == nil {
-		da1440m := ds.NewDailyAggregator(config.DataProduct.SessionStart)
+		da1440m := ds.NewDailyAggregator(session)
 		da5m.Aggregate(da1440m)
 		err = ds.SaveAggregate(da1440m, config.DataConfig)
 	}

@@ -28,7 +28,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/algotiqa/data-collector/pkg/business"
+	"github.com/algotiqa/data-collector/pkg/core"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/ds"
 	"gorm.io/gorm"
@@ -38,7 +38,7 @@ import (
 
 type ParserContext struct {
 	Reader          io.Reader
-	Config          *business.DataConfig
+	Config          *core.QueryConfig
 	FileLocation    *time.Location
 	ProductLocation *time.Location
 	Job             *db.IngestionJob
@@ -58,7 +58,7 @@ type ParserContext struct {
 //===
 //=============================================================================
 
-func NewParserContext(file io.Reader, config *business.DataConfig, fileLoc *time.Location,
+func NewParserContext(file io.Reader, config *core.QueryConfig, fileLoc *time.Location,
 	job *db.IngestionJob, b *db.DataBlock, prodLoc *time.Location) *ParserContext {
 	c := &ParserContext{
 		Reader:          file,

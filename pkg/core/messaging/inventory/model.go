@@ -26,7 +26,6 @@ package inventory
 
 import (
 	"github.com/algotiqa/data-collector/pkg/db"
-	"github.com/algotiqa/types"
 )
 
 //=============================================================================
@@ -67,6 +66,15 @@ type Exchange struct {
 }
 
 //=============================================================================
+
+type TradingSession struct {
+	Id       uint   `json:"id"`
+	Username string `json:"username"`
+	Name     string `json:"name"`
+	Session  string `json:"session"`
+}
+
+//=============================================================================
 //===
 //=== Data product
 //===
@@ -83,15 +91,16 @@ type DataProduct struct {
 	ProductType     string           `json:"productType"`
 	Months          string           `json:"months"`
 	RolloverTrigger db.DPRollTrigger `json:"rolloverTrigger"`
-	SessionStart    types.Time       `json:"sessionStart"`
+	SessionId       uint             `json:"sessionId"`
 }
 
 //=============================================================================
 
 type DataProductMessage struct {
-	DataProduct DataProduct `json:"dataProduct"`
-	Connection  Connection  `json:"connection"`
-	Exchange    Exchange    `json:"exchange"`
+	DataProduct    DataProduct    `json:"dataProduct"`
+	Connection     Connection     `json:"connection"`
+	Exchange       Exchange       `json:"exchange"`
+	TradingSession TradingSession `json:"tradingSession"`
 }
 
 //=============================================================================

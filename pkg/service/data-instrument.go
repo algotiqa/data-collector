@@ -27,6 +27,7 @@ package service
 import (
 	"github.com/algotiqa/core/auth"
 	"github.com/algotiqa/data-collector/pkg/business"
+	"github.com/algotiqa/data-collector/pkg/core"
 	"github.com/algotiqa/data-collector/pkg/core/jobmanager"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"gorm.io/gorm"
@@ -78,15 +79,16 @@ func getDataInstrumentById(c *auth.Context) {
 
 func getDataInstrumentData(c *auth.Context) {
 	var result *business.DataInstrumentDataResponse
-	var config *business.DataConfig
+	var config *core.QueryConfig
 
 	id, err := c.GetIdFromUrl()
 
 	if err == nil {
 		err = db.RunInTransaction(func(tx *gorm.DB) error {
-			cfg, err := business.CreateDataConfig(tx, id)
+			sessionId := c.GetParamAsString("sessionId", "")
+			cfg, err1 := business.CreateQueryConfig(tx, id, sessionId)
 			config = cfg
-			return err
+			return err1
 		})
 
 		if err == nil {
@@ -126,7 +128,7 @@ func reloadDataInstrumentData(c *auth.Context) {
 
 //=============================================================================
 
-func createQuerySpec(c *auth.Context, id uint, config *business.DataConfig) *business.QuerySpec {
+func createQuerySpec(c *auth.Context, id uint, config *core.QueryConfig) *business.QuerySpec {
 	return &business.QuerySpec{
 		Id:        id,
 		From:      c.GetParamAsString("from", ""),

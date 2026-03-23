@@ -39,6 +39,15 @@ type Common struct {
 }
 
 //=============================================================================
+
+type TradingSession struct {
+	Common
+	Username string `json:"username"`
+	Name     string `json:"name"`
+	Session  string `json:"session"`
+}
+
+//=============================================================================
 //===
 //=== Data entities
 //===
@@ -80,7 +89,8 @@ type DataProduct struct {
 	Status               DPStatus      `json:"status"`
 	Months               string        `json:"months"`
 	RolloverTrigger      DPRollTrigger `json:"rollTrigger"`
-	SessionStart         types.Time    `json:"sessionStart"`
+	TradingSessionId     uint          `json:"tradingSessionId"`
+	TradingSessionConfig string        `json:"tradingSessionConfig"`
 }
 
 //=============================================================================
@@ -208,7 +218,7 @@ type DownloadJob struct {
 	Priority         int        `json:"priority"`
 	UserConnection   string     `json:"userConnection"`
 	ProductTimezone  string     `json:"productTimezone"`
-	SessionStart     types.Time `json:"sessionStart"`
+	Session          string     `json:"session"`
 	CurrDay          int        `json:"currDay"`
 	TotDays          int        `json:"totDays"`
 	Error            string     `json:"error"`
@@ -278,13 +288,14 @@ type BiasConfig struct {
 //===
 //=============================================================================
 
-func (DataProduct) TableName() string    { return "data_product" }
+func (DataProduct)    TableName() string { return "data_product"    }
 func (DataInstrument) TableName() string { return "data_instrument" }
-func (DataBlock) TableName() string      { return "data_block" }
-func (BrokerProduct) TableName() string  { return "broker_product" }
-func (IngestionJob) TableName() string   { return "ingestion_job" }
-func (DownloadJob) TableName() string    { return "download_job" }
-func (BiasAnalysis) TableName() string   { return "bias_analysis" }
-func (BiasConfig) TableName() string     { return "bias_config" }
+func (DataBlock)      TableName() string { return "data_block"      }
+func (BrokerProduct)  TableName() string { return "broker_product"  }
+func (IngestionJob)   TableName() string { return "ingestion_job"   }
+func (DownloadJob)    TableName() string { return "download_job"    }
+func (BiasAnalysis)   TableName() string { return "bias_analysis"   }
+func (BiasConfig)     TableName() string { return "bias_config"     }
+func (TradingSession) TableName() string { return "trading_session" }
 
 //=============================================================================

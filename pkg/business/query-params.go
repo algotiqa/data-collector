@@ -29,6 +29,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/algotiqa/data-collector/pkg/core"
 	"github.com/algotiqa/data-collector/pkg/ds"
 	"github.com/algotiqa/types"
 )
@@ -43,13 +44,15 @@ type QuerySpec struct {
 	Timezone  string
 	Timeframe string
 	Reduction string
-	Config    *DataConfig
+	SessionId uint
+	Config    *core.QueryConfig
 }
 
 //=============================================================================
 
 type QueryParams struct {
-	Location   *time.Location
+	TargetLoc  *time.Location
+	ProductLoc *time.Location
 	From       *time.Time
 	To         *time.Time
 	Reduction  int
@@ -60,9 +63,14 @@ type QueryParams struct {
 //=============================================================================
 
 func NewQueryParams(spec *QuerySpec) (*QueryParams, error) {
-	loc, err := getLocation(spec.Timezone, spec.Config)
+	targLoc, err := getLocation(spec.Timezone, spec.Config)
 	if err != nil {
 		return nil, errors.New("Bad 'timezone': " + spec.Timezone + " (" + err.Error() + ")")
+	}
+
+	prodLoc, err := time.LoadLocation(spec.Config.DataProduct.Timezone)
+	if err != nil {
+		return nil, errors.New("Bad product timezone: " + spec.Config.DataProduct.Timezone + " (" + err.Error() + ")")
 	}
 
 	backDays, err := parseBackDays(spec.BackDays)
@@ -78,12 +86,12 @@ func NewQueryParams(spec *QuerySpec) (*QueryParams, error) {
 		from = &back
 		to = &now
 	} else {
-		from, err = parseTime(spec.From, loc)
+		from, err = parseTime(spec.From, targLoc)
 		if err != nil {
 			return nil, errors.New("Bad 'from': " + spec.From + " (" + err.Error() + ")")
 		}
 
-		to, err = parseTime(spec.To, loc)
+		to, err = parseTime(spec.To, targLoc)
 		if err != nil {
 			return nil, errors.New("Bad 'to': " + spec.From + " (" + err.Error() + ")")
 		}
@@ -94,10 +102,7 @@ func NewQueryParams(spec *QuerySpec) (*QueryParams, error) {
 		return nil, errors.New("Bad 'timeframe': " + spec.Timeframe + " (" + err.Error() + ")")
 	}
 
-	da, err := buildDataAggregator(timeframe, spec.Config.DataProduct.SessionStart)
-	if err != nil {
-		return nil, errors.New("Bad 'timeframe': " + spec.Timeframe + " (" + err.Error() + ")")
-	}
+	da := buildDataAggregator(timeframe, spec.Config.TradingSession)
 
 	red, err := parseReduction(spec.Reduction)
 	if err != nil {
@@ -105,18 +110,19 @@ func NewQueryParams(spec *QuerySpec) (*QueryParams, error) {
 	}
 
 	return &QueryParams{
-		From:       from,
-		To:         to,
-		Location:   loc,
-		Reduction:  red,
-		Timeframe:  timeframe,
+		From      : from,
+		To        : to,
+		TargetLoc : targLoc,
+		ProductLoc: prodLoc,
+		Reduction : red,
+		Timeframe : timeframe,
 		Aggregator: da,
 	}, nil
 }
 
 //=============================================================================
 
-func getLocation(timezone string, config *DataConfig) (*time.Location, error) {
+func getLocation(timezone string, config *core.QueryConfig) (*time.Location, error) {
 	if timezone == "" || timezone == "exchange" {
 		timezone = config.DataProduct.Timezone
 	}
@@ -205,22 +211,26 @@ func parseReduction(value string) (int, error) {
 
 //=============================================================================
 
-func buildDataAggregator(timeframe int, sessionStart types.Time) (ds.DataAggregator, error) {
-	tf := timeframe
-
-	if tf == 1 || tf == 5 || tf == 15 || tf == 60 || tf == 1440 {
-		return ds.NewSimpleAggregator(ds.NewQuantizerIdentity(tf)), nil
+func buildDataAggregator(timeframe int, session *types.TradingSession) ds.DataAggregator {
+	if timeframe == 1440 {
+		return ds.NewDailyAggregator(session)
 	}
 
-	if tf == 10 {
-		return ds.NewSimpleAggregator(ds.NewQuantizer5mTo10m()), nil
+	granularity := session.Granularity()
+
+	if  (timeframe % 60 == 0) && (granularity == 60) {
+		return ds.NewStandardAggregator(session, granularity, timeframe)
 	}
 
-	if tf == 30 {
-		return ds.NewSimpleAggregator(ds.NewQuantizer15mTo30m()), nil
+	if  (timeframe % 15 == 0) && (granularity >= 15) {
+		return ds.NewStandardAggregator(session, 15, timeframe)
 	}
-	//TODO: decide a better strategy. Put into a factory
-	return ds.NewSimpleAggregator(ds.NewQuantizer1mToGeneric(tf)), nil
+
+	if  (timeframe % 5 == 0) && (granularity >=  5) {
+		return ds.NewStandardAggregator(session, 5, timeframe)
+	}
+
+	return ds.NewStandardAggregator(session, 1, timeframe)
 }
 
 //=============================================================================
