@@ -26,6 +26,7 @@ package business
 
 import (
 	"math"
+	"strconv"
 	"time"
 
 	"github.com/algotiqa/core/auth"
@@ -40,9 +41,9 @@ import (
 const (
 	DirectionStrongBear = -2
 	DirectionBear       = -1
-	DirectionNeutral    = 0
-	DirectionBull       = 1
-	DirectionStrongBull = 2
+	DirectionNeutral    =  0
+	DirectionBull       =  1
+	DirectionStrongBull =  2
 )
 
 const (
@@ -53,41 +54,47 @@ const (
 )
 
 const (
-	SqnLen    = 100
-	Atr10Len  = 10
-	Atr100Len = SqnLen
+	SqnLen = 100
 )
 
 //=============================================================================
 
 type DataProductAnalysisResponse struct {
-	Id           uint           `json:"id"`
-	Symbol       string         `json:"symbol"`
-	From         types.Date     `json:"from"`
-	To           types.Date     `json:"to"`
-	Days         int            `json:"days"`
-	DailyResults []*DailyResult `json:"dailyResults"`
+	Id           uint          `json:"id"`
+	Symbol       string        `json:"symbol"`
+	From         types.Date    `json:"from"`
+	To           types.Date    `json:"to"`
+	Bars         int           `json:"bars"`
+	Timeframe    int           `json:"timeframe"`
+	AtrLength    int           `json:"atrLength"`
+	BarResults   []*BarResult  `json:"barResults"`
 }
 
 //=============================================================================
 
-type DailyResult struct {
-	Date       time.Time `json:"date"`
-	Price      float64   `json:"price"`
-	PercChange float64   `json:"percChange"`
-	Sqn100     float64   `json:"sqn100"`
-	TrueRange  float64   `json:"trueRange"`
-	Atr10      float64   `json:"atr10"`
-	Atr100     float64   `json:"atr100"`
-	AtrRatio   float64   `json:"atrRatio"`
-	Direction  int       `json:"direction"`
-	Volatility int       `json:"volatility"`
+type BarResult struct {
+	Time          time.Time `json:"time"`
+	Close         float64   `json:"close"`
+	BarChangePerc float64   `json:"barChangePerc"`
+	TrueRange     float64   `json:"trueRange"`
+	Sqn100        float64   `json:"sqn100"`
+	Atr           float64   `json:"atr"`
+	AtrPerc       float64   `json:"atrPerc"`
+	AtrMeanPerc   float64   `json:"atrMeanPerc"`
+	AtrStdDevPerc float64   `json:"atrStdDevPerc"`
+	Direction     int       `json:"direction"`
+	Volatility    int       `json:"volatility"`
 }
 
 //=============================================================================
 
-func AnalyzeProduct(c *auth.Context, spec *QuerySpec) (*DataProductAnalysisResponse, error) {
+func AnalyzeProduct(c *auth.Context, spec *QuerySpec, atrLen string) (*DataProductAnalysisResponse, error) {
 	params, err := NewQueryParams(spec)
+	if err != nil {
+		return nil, req.NewBadRequestError(err.Error())
+	}
+
+	atr,err := parseAtrLen(atrLen)
 	if err != nil {
 		return nil, req.NewBadRequestError(err.Error())
 	}
@@ -100,16 +107,18 @@ func AnalyzeProduct(c *auth.Context, spec *QuerySpec) (*DataProductAnalysisRespo
 		return nil, err
 	}
 
-	initialResults := createDailyResults(dataPoints)
-	dailyResults := calcSqnAndAtr(initialResults)
+	initialResults := createBarResults(dataPoints, atr)
+	barResults     := calcSqnAndAtr(initialResults)
 
 	res := &DataProductAnalysisResponse{
-		Id:           spec.Id,
-		Symbol:       symbol,
-		From:         types.ToDate(params.From),
-		To:           types.ToDate(params.To),
-		Days:         len(dailyResults),
-		DailyResults: dailyResults,
+		Id        : spec.Id,
+		Symbol    : symbol,
+		From      : types.ToDate(params.From),
+		To        : types.ToDate(params.To),
+		Bars      : len(barResults),
+		Timeframe : params.Timeframe,
+		AtrLength : atr,
+		BarResults: barResults,
 	}
 
 	normalizeValues(res)
@@ -123,32 +132,50 @@ func AnalyzeProduct(c *auth.Context, spec *QuerySpec) (*DataProductAnalysisRespo
 //===
 //=============================================================================
 
-func createDailyResults(dataPoints []*ds.DataPoint) []*DailyResult {
+func parseAtrLen(atrLen string) (int, error) {
+	if atrLen == "" {
+		return 20,nil
+	}
+
+	val,err := strconv.Atoi(atrLen)
+	if err != nil {
+		return 0, req.NewBadRequestError("parameter 'atrLen' must be a number: "+ atrLen)
+	}
+
+	if val < 5 || val > 50 {
+		return 0, req.NewBadRequestError("parameter 'atrLen' must be between 5 and 50")
+	}
+
+	return val, nil
+}
+
+//=============================================================================
+
+func createBarResults(dataPoints []*ds.DataPoint, atrLen int) []*BarResult {
 	if len(dataPoints) == 0 {
 		return nil
 	}
 
-	var results []*DailyResult
+	var results []*BarResult
 
 	for i, dp := range dataPoints {
-		if i >= 100 {
-			prevClose := dataPoints[i-100].Close
-			ratio := 0.0
-
-			if prevClose != 0 {
-				ratio = dp.Close - prevClose/prevClose
+		if i > 0 {
+			tr := calcTrueRange(dp, dataPoints[i-1])
+			dr := &BarResult{
+				Time         : dp.Time,
+				Close        : dp.Close,
+				BarChangePerc: 0,
+				TrueRange    : tr,
 			}
 
-			tr := calcTrueRange(dp, dataPoints[i-1])
+			prevClose := dataPoints[i-1].Close
 
-			dr := &DailyResult{
-				Date:       dp.Time,
-				Price:      dp.Close,
-				PercChange: ratio,
-				TrueRange:  tr,
+			if prevClose != 0 {
+				dr.BarChangePerc = (dp.Close - prevClose)/prevClose
 			}
 
 			results = append(results, dr)
+			calcAtr(results, atrLen)
 		}
 	}
 
@@ -160,29 +187,53 @@ func createDailyResults(dataPoints []*ds.DataPoint) []*DailyResult {
 func calcTrueRange(curr *ds.DataPoint, prev *ds.DataPoint) float64 {
 	range1 := curr.High - curr.Low
 	range2 := math.Abs(curr.High - prev.Close)
-	range3 := math.Abs(curr.Low - prev.Close)
+	range3 := math.Abs(curr.Low  - prev.Close)
 
 	return math.Max(math.Max(range1, range2), range3)
 }
 
 //=============================================================================
 
-func calcSqnAndAtr(list []*DailyResult) []*DailyResult {
-	var result []*DailyResult
+func calcAtr(list []*BarResult, atrLen int) {
+	end  := len(list) -1
+	last := list[end]
+
+	if end == 0 {
+		last.Atr = last.TrueRange
+	} else {
+		start := end - atrLen +1
+		if start < 0 {
+			start = 0
+		}
+
+		sum := 0.0
+
+		for i := start; i <= end; i++ {
+			sum += list[i].TrueRange
+		}
+
+		last.Atr = sum / float64(end-start+1)
+	}
+
+	if last.Close != 0 {
+		last.AtrPerc = last.Atr / last.Close
+	}
+}
+
+//=============================================================================
+
+func calcSqnAndAtr(list []*BarResult) []*BarResult {
+	var result []*BarResult
 
 	for i, dr := range list {
 		if i >= SqnLen-1 {
-			dr.Sqn100 = calcSqn(list, i-SqnLen+1, i)
-			dr.Atr10 = calcAtr(list, i-Atr10Len+1, i)
-			dr.Atr100 = calcAtr(list, i-Atr100Len+1, i)
+			dr.Sqn100 = calcSqn(list, i-SqnLen +1, i)
 
-			dr.AtrRatio = 0
-			if dr.Atr100 != 0 {
-				dr.AtrRatio = dr.Atr10 / dr.Atr100
-			}
-
-			dr.Direction = calcDirection(dr.Sqn100)
-			dr.Volatility = calcVolatility(dr.AtrRatio)
+			atrMean, atrDev := calcAtrMeanAndStdDev(list, i-SqnLen +1, i)
+			dr.AtrMeanPerc   = atrMean
+			dr.AtrStdDevPerc = atrDev
+			dr.Direction     = calcDirection(dr.Sqn100)
+			dr.Volatility    = calcVolatility(dr.AtrPerc, atrMean, atrDev)
 
 			result = append(result, dr)
 		}
@@ -193,24 +244,24 @@ func calcSqnAndAtr(list []*DailyResult) []*DailyResult {
 
 //=============================================================================
 
-func calcSqn(list []*DailyResult, start int, end int) float64 {
+func calcSqn(list []*BarResult, start int, end int) float64 {
 	//--- Calc mean
 
 	sum := 0.0
 
-	for i := start; i <= end; i++ {
-		sum += list[i].PercChange
+	for i:=start; i<=end; i++ {
+		sum += list[i].BarChangePerc
 	}
 
 	mean := sum / float64(SqnLen)
 
 	//--- Calc stdDev
 
-	sum = 0.0
+	sum   = 0.0
 	diff := 0.0
 
 	for i := start; i <= end; i++ {
-		diff = list[i].PercChange - mean
+		diff = list[i].BarChangePerc - mean
 		sum += diff * diff
 	}
 
@@ -221,33 +272,42 @@ func calcSqn(list []*DailyResult, start int, end int) float64 {
 
 //=============================================================================
 
-func calcAtr(list []*DailyResult, start int, end int) float64 {
+func calcAtrMeanAndStdDev(list []*BarResult, start int, end int) (float64, float64) {
+	//--- Calc mean
+
 	sum := 0.0
 
-	for i := start; i <= end; i++ {
-		sum += list[i].TrueRange
+	for i:=start; i<=end; i++ {
+		sum += list[i].AtrPerc
 	}
 
-	mean := sum / float64(end-start+1)
-	price := list[end].Price
+	mean := sum / float64(SqnLen)
 
-	if price == 0 {
-		return 0.0
+	//--- Calc stdDev
+
+	sum   = 0.0
+	diff := 0.0
+
+	for i:=start; i<=end; i++ {
+		diff = list[i].AtrPerc - mean
+		sum += diff*diff
 	}
 
-	return mean / price
+	stdDev := math.Sqrt(sum/float64(SqnLen))
+
+	return mean, stdDev
 }
 
 //=============================================================================
 
 func calcDirection(sqn float64) int {
-	if sqn < -0.7 {
+	if sqn < -1.47 {
 		return DirectionStrongBear
 	}
-	if sqn < 0 {
+	if sqn < -0.74 {
 		return DirectionBear
 	}
-	if sqn < 0.7 {
+	if sqn < 0.74 {
 		return DirectionNeutral
 	}
 	if sqn < 1.47 {
@@ -259,17 +319,10 @@ func calcDirection(sqn float64) int {
 
 //=============================================================================
 
-func calcVolatility(atrRatio float64) int {
-
-	if atrRatio < 0.8 {
-		return VolatilityQuiet
-	}
-	if atrRatio < 1.2 {
-		return VolatilityNormal
-	}
-	if atrRatio < 2 {
-		return VolatilityVolatile
-	}
+func calcVolatility(percAtr float64, mean float64, std float64) int {
+	if percAtr < mean - std/2 { return VolatilityQuiet    }
+	if percAtr < mean + std/2 { return VolatilityNormal   }
+	if percAtr < mean + std*3 { return VolatilityVolatile }
 
 	return VolatilityVeryVolatile
 }
@@ -277,12 +330,13 @@ func calcVolatility(atrRatio float64) int {
 //=============================================================================
 
 func normalizeValues(res *DataProductAnalysisResponse) {
-	for _, dr := range res.DailyResults {
-		dr.PercChange = core.Trunc2d(dr.PercChange * 100)
-		dr.Sqn100 = core.Trunc2d(dr.Sqn100)
-		dr.Atr10 = core.Trunc2d(dr.Atr10)
-		dr.Atr100 = core.Trunc2d(dr.Atr100)
-		dr.AtrRatio = core.Trunc2d(dr.AtrRatio)
+	for _, dr := range res.BarResults {
+		dr.BarChangePerc = core.Trunc2d(dr.BarChangePerc * 100)
+		dr.Sqn100        = core.Trunc2d(dr.Sqn100)
+		dr.Atr           = core.Trunc4d(dr.Atr)
+		dr.AtrPerc       = core.Trunc2d(dr.AtrPerc       * 100)
+		dr.AtrMeanPerc   = core.Trunc2d(dr.AtrMeanPerc   * 100)
+		dr.AtrStdDevPerc = core.Trunc4d(dr.AtrStdDevPerc * 100)
 	}
 }
 

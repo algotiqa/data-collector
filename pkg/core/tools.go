@@ -29,6 +29,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/algotiqa/core/req"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/ds"
 	"github.com/algotiqa/types"
@@ -116,6 +117,12 @@ func Trunc2d(value float64) float64 {
 }
 
 //=============================================================================
+
+func Trunc4d(value float64) float64 {
+	return float64(int(value * 10000)) / 10000
+}
+
+//=============================================================================
 //===
 //=== Query config & trading session
 //===
@@ -156,7 +163,7 @@ func GetTradingSession(tx *gorm.DB, id string, dp *db.DataProduct) (*types.Tradi
 
 	sessId,err := strconv.Atoi(id)
 	if err != nil {
-		return nil, err
+		return nil, req.NewBadRequestError("Bad sessionId parameter: %v", id)
 	}
 
 	ts,err1 := db.GetTradingSessionById(tx, uint(sessId))

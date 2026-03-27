@@ -310,7 +310,7 @@ func getDataPoints(params *QueryParams, config *core.QueryConfig) ([]*ds.DataPoi
 		if err != nil {
 			return nil, err
 		}
-		shiftDataPoints(params.Aggregator, aggreg, c.Delta)
+		shiftDataPoints(params, aggreg, c.Delta)
 
 		//--- When not provided by the user, 'to' will be nil on the last chunk
 
@@ -394,12 +394,40 @@ func cumulateDeltas(chunks *[]*QueryChunk) {
 
 //=============================================================================
 
-func shiftDataPoints(source, destin ds.DataAggregator, delta float64) {
+func shiftDataPoints(params *QueryParams, destin ds.DataAggregator, delta float64) {
+	source  := params.Aggregator
+	isfirst := true
+
 	for _, dp := range source.DataPoints() {
 		dp.Open  += delta
 		dp.High  += delta
 		dp.Low   += delta
 		dp.Close += delta
+
+		//--- When joining different results, if the timeframe is greater than the granularity
+		//--- we have the last previous bar and the first next bar that are actually the same bar.
+		//--- In this case, we have to merge them
+		if isfirst {
+			dataPoints := destin.DataPoints()
+			if len(dataPoints) > 0 {
+				lastDp   := dataPoints[len(dataPoints)-1]
+				lastTime := lastDp.Time
+				nextTime := lastTime.Add(time.Duration(params.Timeframe) * time.Minute)
+
+				if nextTime.After(dp.Time) {
+					//--- Current dp.Time is earlier that nextTime -> we need to merge
+					lastDp.High  = math.Max(lastDp.High, dp.High)
+					lastDp.Low   = math.Min(lastDp.Low , dp.Low)
+					lastDp.Close = dp.Close
+					lastDp.Time  = dp.Time
+
+					isfirst = false
+					continue
+				}
+			}
+
+			isfirst = false
+		}
 
 		destin.Add(dp)
 	}

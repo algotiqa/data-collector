@@ -127,8 +127,9 @@ func analyzeDataProduct(c *auth.Context) {
 		})
 
 		if err == nil {
-			spec := createQuerySpec(c, id, config)
-			result, err = business.AnalyzeProduct(c, spec)
+			spec   := createQuerySpec(c, id, config)
+			atrLen := c.GetParamAsString("atrLen", "")
+			result, err = business.AnalyzeProduct(c, spec, atrLen)
 			if err == nil {
 				_ = c.ReturnObject(result)
 				return
