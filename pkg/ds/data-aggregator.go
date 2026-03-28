@@ -25,6 +25,7 @@ THE SOFTWARE.
 package ds
 
 import (
+	"log/slog"
 	"math"
 	"strconv"
 	"time"
@@ -169,15 +170,16 @@ func (a *SimpleAggregator) Add(dp *DataPoint) {
 	//--- Aggregation required
 
 	dpTime := a.quantizer.Quantize(dp.Time)
+	dp.Time = dpTime
 
 	if a.currDp == nil {
-		a.currDp = newDataPoint(dp, dpTime)
+		a.currDp = dp
 	} else {
 		if a.currDp.Time.Equal(dpTime) {
 			merge(a.currDp, dp)
 		} else {
 			a.dataPoints = append(a.dataPoints, a.currDp)
-			a.currDp = newDataPoint(dp, dpTime)
+			a.currDp = dp
 		}
 	}
 }
@@ -233,7 +235,7 @@ func (a *StandardAggregator) Add(dp *DataPoint) {
 	dpTime := dp.Time
 
 	if a.currDp == nil {
-		a.currDp    = newDataPoint(dp, dpTime)
+		a.currDp    = dp
 		a.firstTime = dpTime
 	} else {
 		crossSlots := false
@@ -241,9 +243,16 @@ func (a *StandardAggregator) Add(dp *DataPoint) {
 			crossSlots = a.session.CrossSlots(a.currDp.Time, dpTime)
 		}
 
-		if crossSlots || a.maxBarReached(dpTime) {
+		rem := a.currentPointTimeframeRemainder()
+
+		if crossSlots || a.maxBarReached(dpTime) || rem == 0 {
+			if rem > 0 {
+				//--- We need to fix the DataPoint's time
+				a.currDp.Time = a.currDp.Time.Add(time.Duration(rem) * time.Minute)
+			}
+
 			a.dataPoints = append(a.dataPoints, a.currDp)
-			a.currDp     = newDataPoint(dp, dpTime)
+			a.currDp     = dp
 			a.firstTime  = dpTime
 		} else {
 			merge(a.currDp, dp)
@@ -259,6 +268,24 @@ func (a *StandardAggregator) maxBarReached(newTime time.Time) bool {
 	maxBarSize  := (a.target - a.base) * 60
 
 	return (currBarSize > maxBarSize) || maxBarSize == 0
+}
+
+//=============================================================================
+
+func (a *StandardAggregator) currentPointTimeframeRemainder() int {
+	if a.session != nil {
+		slot := a.session.FindSlot(a.currDp.Time)
+		if slot != nil {
+			mins := slot.MinutesSinceOpen(a.currDp.Time)
+			rem  := mins % a.target
+
+			return rem
+		} else {
+			slog.Warn("Cannot find a slot to fix end time!", "time", a.currDp.Time)
+		}
+	}
+
+	return -1
 }
 
 //=============================================================================
@@ -303,11 +330,11 @@ func (a *DailyAggregator) Add(dp *DataPoint) {
 	dpTime := dp.Time
 
 	if a.currDp == nil {
-		a.currDp = newDataPoint(dp, dpTime)
+		a.currDp = dp
 	} else {
 		if a.session.CrossSessions(a.currDp.Time, dpTime) {
 			a.dataPoints = append(a.dataPoints, a.currDp)
-			a.currDp = newDataPoint(dp, dpTime)
+			a.currDp = dp
 		} else {
 			merge(a.currDp, dp)
 			a.currDp.Time = dpTime
@@ -330,23 +357,6 @@ func merge(cp, dp *DataPoint) {
 	cp.UpTicks      += dp.UpTicks
 	cp.DownTicks    += dp.DownTicks
 	cp.OpenInterest += dp.OpenInterest
-}
-
-//=============================================================================
-
-func newDataPoint(dp *DataPoint, t time.Time) *DataPoint {
-	return &DataPoint{
-		Time        : t,
-		Open        : dp.Open,
-		High        : dp.High,
-		Low         : dp.Low,
-		Close       : dp.Close,
-		UpVolume    : dp.UpVolume,
-		DownVolume  : dp.DownVolume,
-		UpTicks     : dp.UpTicks,
-		DownTicks   : dp.DownTicks,
-		OpenInterest: dp.OpenInterest,
-	}
 }
 
 //=============================================================================

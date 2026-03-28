@@ -70,6 +70,19 @@ var sessionConfig = `{ "slots": [
 	{ "day":4, "open": 1700, "close": 1600, "end": true }
 ]}`
 
+var missingData15min = []DataPoint{
+	{Time: p("2024-07-18T23:15:00+00:00"), Open: 4663, High: 4666.75, Low: 4660.5, Close: 4665.75, UpVolume: 4504, DownVolume: 3388, UpTicks: 3209, DownTicks: 2640, OpenInterest: 0},
+	{Time: p("2024-07-18T23:30:00+00:00"), Open: 4663, High: 4666.75, Low: 4660.5, Close: 4665.75, UpVolume: 4504, DownVolume: 3388, UpTicks: 3209, DownTicks: 2640, OpenInterest: 0},
+	{Time: p("2024-07-18T23:45:00+00:00"), Open: 4663, High: 4666.75, Low: 4660.5, Close: 4665.75, UpVolume: 4504, DownVolume: 3388, UpTicks: 3209, DownTicks: 2640, OpenInterest: 0},
+	{Time: p("2024-07-19T00:00:00+00:00"), Open: 4663, High: 4666.75, Low: 4660.5, Close: 4665.75, UpVolume: 4504, DownVolume: 3388, UpTicks: 3209, DownTicks: 2640, OpenInterest: 0},
+	{Time: p("2024-07-19T00:15:00+00:00"), Open: 4663, High: 4666.75, Low: 4660.5, Close: 4665.75, UpVolume: 4504, DownVolume: 3388, UpTicks: 3209, DownTicks: 2640, OpenInterest: 0},
+	{Time: p("2024-07-19T02:30:00+00:00"), Open: 4663, High: 4666.75, Low: 4660.5, Close: 4665.75, UpVolume: 4504, DownVolume: 3388, UpTicks: 3209, DownTicks: 2640, OpenInterest: 0},
+	{Time: p("2024-07-19T02:45:00+00:00"), Open: 4663, High: 4666.75, Low: 4660.5, Close: 4665.75, UpVolume: 4504, DownVolume: 3388, UpTicks: 3209, DownTicks: 2640, OpenInterest: 0},
+	{Time: p("2024-07-19T03:00:00+00:00"), Open: 4663, High: 4666.75, Low: 4660.5, Close: 4665.75, UpVolume: 4504, DownVolume: 3388, UpTicks: 3209, DownTicks: 2640, OpenInterest: 0},
+	{Time: p("2024-07-19T03:15:00+00:00"), Open: 4663, High: 4666.75, Low: 4660.5, Close: 4665.75, UpVolume: 4504, DownVolume: 3388, UpTicks: 3209, DownTicks: 2640, OpenInterest: 0},
+	{Time: p("2024-07-19T03:30:00+00:00"), Open: 4663, High: 4666.75, Low: 4660.5, Close: 4665.75, UpVolume: 4504, DownVolume: 3388, UpTicks: 3209, DownTicks: 2640, OpenInterest: 0},
+}
+
 //=============================================================================
 
 func p(d string) time.Time {
@@ -108,6 +121,57 @@ func TestDailyAggregator(t *testing.T) {
 
 	if *dp != daily {
 		t.Errorf("Data point %v does not match expected value %v", dp, daily)
+	}
+}
+
+//=============================================================================
+
+func TestAggregatorResync(t *testing.T) {
+	session,err := types.NewTradingSession(sessionConfig)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	da30m := NewStandardAggregator(session, 15, 30)
+	for _, dp := range missingData15min {
+		da30m.Add(&dp)
+	}
+	da30m.Flush()
+	dp := da30m.dataPoints[2]
+	hh,mm,_ := dp.Time.Clock()
+	tim := types.NewTime(hh,mm)
+	exp := types.NewTime(0, 30)
+
+	if tim != exp {
+		t.Errorf("Data point not resynchronized. Expected %v but got %v", exp, tim)
+	}
+
+	dp = da30m.dataPoints[3]
+	hh,mm,_ = dp.Time.Clock()
+	tim = types.NewTime(hh,mm)
+	exp = types.NewTime(2, 30)
+
+	if tim != exp {
+		t.Errorf("Data point not resynchronized. Expected %v but got %v", exp, tim)
+	}
+
+	dp = da30m.dataPoints[4]
+	hh,mm,_ = dp.Time.Clock()
+	tim = types.NewTime(hh,mm)
+	exp = types.NewTime(3, 00)
+
+	if tim != exp {
+		t.Errorf("Data point not resynchronized. Expected %v but got %v", exp, tim)
+	}
+
+	dp = da30m.dataPoints[5]
+	hh,mm,_ = dp.Time.Clock()
+	tim = types.NewTime(hh,mm)
+	exp = types.NewTime(3, 30)
+
+	if tim != exp {
+		t.Errorf("Data point not resynchronized. Expected %v but got %v", exp, tim)
 	}
 }
 
