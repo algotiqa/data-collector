@@ -126,7 +126,7 @@ func TestDailyAggregator(t *testing.T) {
 
 //=============================================================================
 
-func TestAggregatorResync(t *testing.T) {
+func TestAggregatorBarResync(t *testing.T) {
 	session,err := types.NewTradingSession(sessionConfig)
 	if err != nil {
 		t.Error(err)
