@@ -36,14 +36,19 @@ import (
 
 //=============================================================================
 
+const HardLimit = 3000000
+
+//=============================================================================
+
 type QuerySpec struct {
 	Id        uint
 	From      string
 	To        string
-	BackDays  string
+	DaysBack  string
 	Timezone  string
 	Timeframe string
 	Reduction string
+	Limit     string
 	SessionId uint
 	Config    *core.QueryConfig
 }
@@ -56,6 +61,7 @@ type QueryParams struct {
 	From       *time.Time
 	To         *time.Time
 	Reduction  int
+	Limit      int
 	Timeframe  int
 	Aggregator ds.DataAggregator
 }
@@ -73,16 +79,16 @@ func NewQueryParams(spec *QuerySpec) (*QueryParams, error) {
 		return nil, errors.New("Bad product timezone: " + spec.Config.DataProduct.Timezone + " (" + err.Error() + ")")
 	}
 
-	backDays, err := parseBackDays(spec.BackDays)
+	daysBack, err := parseBackDays(spec.DaysBack)
 	if err != nil {
-		return nil, errors.New("Bad 'backDays': " + spec.BackDays + " (" + err.Error() + ")")
+		return nil, errors.New("Bad 'backDays': " + spec.DaysBack + " (" + err.Error() + ")")
 	}
 
 	var from, to *time.Time
 
-	if backDays > 0 {
+	if daysBack > 0 {
 		now := time.Now()
-		back := now.Add(-time.Hour * 24 * time.Duration(backDays))
+		back := now.Add(-time.Hour * 24 * time.Duration(daysBack))
 		from = &back
 		to = &now
 	} else {
@@ -109,12 +115,18 @@ func NewQueryParams(spec *QuerySpec) (*QueryParams, error) {
 		return nil, errors.New("Bad 'reduction': " + spec.Reduction + " (" + err.Error() + ")")
 	}
 
+	lim, err := parseLimit(spec.Limit)
+	if err != nil {
+		return nil, errors.New("Bad 'limit': " + spec.Limit + " (" + err.Error() + ")")
+	}
+
 	return &QueryParams{
 		From      : from,
 		To        : to,
 		TargetLoc : targLoc,
 		ProductLoc: prodLoc,
 		Reduction : red,
+		Limit     : lim,
 		Timeframe : timeframe,
 		Aggregator: da,
 	}, nil
@@ -207,6 +219,30 @@ func parseReduction(value string) (int, error) {
 	}
 
 	return red, nil
+}
+
+//=============================================================================
+
+func parseLimit(value string) (int, error) {
+	if value == "" {
+		return HardLimit, nil
+	}
+
+	lim, err := strconv.Atoi(value)
+
+	if err != nil {
+		return 0, err
+	}
+
+	if lim == 0 {
+		return HardLimit, nil
+	}
+
+	if lim < 1 || lim > HardLimit {
+		return 0, errors.New("allowed range is [1.."+ strconv.Itoa(HardLimit) +"]")
+	}
+
+	return lim, nil
 }
 
 //=============================================================================

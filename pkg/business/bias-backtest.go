@@ -124,8 +124,8 @@ func RunBacktest(c *auth.Context, bbr *BiasBacktestResponse) error {
 	c.Log.Info("RunBacktest: Starting backtest for bias analysis", "id", bbr.BiasAnalysis.Id)
 
 	loc, _ := time.LoadLocation(bbr.config.DataProduct.Timezone)
-	da := ds.NewSimpleAggregator(ds.NewQuantizer15mTo30m())
-	err := ds.GetDataPoints(nil, nil, bbr.config.DataConfig, loc, da)
+	da  := ds.NewSimpleAggregator(ds.NewQuantizer15mTo30m())
+	err := ds.GetDataPoints(nil, nil, bbr.config.DataConfig, loc, da, 0)
 
 	if err != nil {
 		c.Log.Error("RunBacktest: Could not retrieve data points", "error", err.Error())

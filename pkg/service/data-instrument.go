@@ -130,14 +130,15 @@ func reloadDataInstrumentData(c *auth.Context) {
 
 func createQuerySpec(c *auth.Context, id uint, config *core.QueryConfig) *business.QuerySpec {
 	return &business.QuerySpec{
-		Id:        id,
-		From:      c.GetParamAsString("from", ""),
-		To:        c.GetParamAsString("to", ""),
-		BackDays:  c.GetParamAsString("backDays", ""),
-		Timezone:  c.GetParamAsString("timezone", ""),
+		Id       : id,
+		From     : c.GetParamAsString("from",      ""),
+		To       : c.GetParamAsString("to",        ""),
+		DaysBack : c.GetParamAsString("daysBack",  ""),
+		Timezone : c.GetParamAsString("timezone",  ""),
 		Timeframe: c.GetParamAsString("timeframe", ""),
 		Reduction: c.GetParamAsString("reduction", ""),
-		Config:    config,
+		Limit    : c.GetParamAsString("limit",     ""),
+		Config   : config,
 	}
 }
 

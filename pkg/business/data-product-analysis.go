@@ -67,6 +67,8 @@ type DataProductAnalysisResponse struct {
 	Bars         int           `json:"bars"`
 	Timeframe    int           `json:"timeframe"`
 	AtrLength    int           `json:"atrLength"`
+	Limit        int           `json:"limit"`
+	Overflow     bool          `json:"overflow"`
 	BarResults   []*BarResult  `json:"barResults"`
 }
 
@@ -117,6 +119,8 @@ func AnalyzeProduct(c *auth.Context, spec *QuerySpec, atrLen string) (*DataProdu
 		To        : types.ToDate(params.To),
 		Bars      : len(barResults),
 		Timeframe : params.Timeframe,
+		Limit     : params.Limit,
+		Overflow  : params.Limit > 0 && len(barResults) >= params.Limit,
 		AtrLength : atr,
 		BarResults: barResults,
 	}

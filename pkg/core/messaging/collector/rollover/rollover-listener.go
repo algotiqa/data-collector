@@ -223,7 +223,7 @@ func getPrices(systemCode, symbol string, from time.Time) ([]*ds.DataPoint, erro
 	da     := ds.NewIdentityAggregator(60)
 	to     := from.Add(5 * 24 * time.Hour)
 
-	err := ds.GetDataPoints(&from, &to, config, time.UTC, da)
+	err := ds.GetDataPoints(&from, &to, config, time.UTC, da, 0)
 	if err != nil {
 		return nil, err
 	}

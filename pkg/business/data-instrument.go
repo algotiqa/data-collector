@@ -241,11 +241,14 @@ func reduceDataPoints(dataPoints []*ds.DataPoint, reduction int) ([]*ds.DataPoin
 		if currDp == nil {
 			currDp = dp
 		} else {
-			currDp.High = math.Max(currDp.High, dp.High)
-			currDp.Low = math.Min(currDp.Low, dp.Low)
-			currDp.Close = dp.Close
-			currDp.UpVolume += dp.UpVolume
-			currDp.DownVolume += dp.DownVolume
+			currDp.High          = math.Max(currDp.High, dp.High)
+			currDp.Low           = math.Min(currDp.Low, dp.Low)
+			currDp.Close         = dp.Close
+			currDp.UpVolume     += dp.UpVolume
+			currDp.DownVolume   += dp.DownVolume
+			currDp.UpTicks      += dp.UpTicks
+			currDp.DownTicks    += dp.DownTicks
+			currDp.OpenInterest += dp.OpenInterest
 		}
 
 		count++
@@ -282,7 +285,7 @@ func calcDataRange(dataPoints []*ds.DataPoint) (string, string) {
 
 func getDataPoints(params *QueryParams, config *core.QueryConfig) ([]*ds.DataPoint, error) {
 	if !config.DataInstrument.VirtualInstrument {
-		err := ds.GetDataPoints(params.From, params.To, config.DataConfig, params.ProductLoc, params.Aggregator)
+		err := ds.GetDataPoints(params.From, params.To, config.DataConfig, params.ProductLoc, params.Aggregator, params.Limit)
 		return params.Aggregator.ToTimezone(params.TargetLoc).DataPoints(), err
 	}
 
@@ -298,6 +301,7 @@ func getDataPoints(params *QueryParams, config *core.QueryConfig) ([]*ds.DataPoi
 	from    := params.From
 	dconfig := config.DataConfig
 	aggreg  := ds.NewSimpleAggregator(nil)
+	count   := 0
 
 	for i, c := range *chunks {
 		to := &c.RolloverDate
@@ -306,11 +310,15 @@ func getDataPoints(params *QueryParams, config *core.QueryConfig) ([]*ds.DataPoi
 		}
 
 		dconfig.Symbol = c.Symbol
-		err := ds.GetDataPoints(from, to, dconfig, params.ProductLoc, params.Aggregator)
+		err := ds.GetDataPoints(from, to, dconfig, params.ProductLoc, params.Aggregator, params.Limit)
 		if err != nil {
 			return nil, err
 		}
-		shiftDataPoints(params, aggreg, c.Delta)
+
+		count = shiftDataPoints(params, aggreg, c.Delta, count, params.Limit)
+		if params.Limit > 0 && count >= params.Limit {
+			break
+		}
 
 		//--- When not provided by the user, 'to' will be nil on the last chunk
 
@@ -394,7 +402,7 @@ func cumulateDeltas(chunks *[]*QueryChunk) {
 
 //=============================================================================
 
-func shiftDataPoints(params *QueryParams, destin ds.DataAggregator, delta float64) {
+func shiftDataPoints(params *QueryParams, destin ds.DataAggregator, delta float64, count int, limit int) int {
 	source  := params.Aggregator
 	isfirst := true
 
@@ -430,10 +438,17 @@ func shiftDataPoints(params *QueryParams, destin ds.DataAggregator, delta float6
 		}
 
 		destin.Add(dp)
+
+		count++
+		if limit > 0 && count >= limit {
+			break
+		}
 	}
 
 	source.Clear()
 	destin.Flush()
+
+	return count
 }
 
 //=============================================================================

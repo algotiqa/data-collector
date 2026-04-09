@@ -131,7 +131,7 @@ func NewDataConfig(systemCode, symbol string) *DataConfig {
 
 //=============================================================================
 
-func GetDataPoints(from *time.Time, to *time.Time, config *DataConfig, prodLoc *time.Location, da DataAggregator) error {
+func GetDataPoints(from *time.Time, to *time.Time, config *DataConfig, prodLoc *time.Location, da DataAggregator, limit int) error {
 	if from == nil {
 		from = &DefaultFrom
 	}
@@ -148,6 +148,7 @@ func GetDataPoints(from *time.Time, to *time.Time, config *DataConfig, prodLoc *
 
 	defer rows.Close()
 
+	count := 0
 	for rows.Next() {
 		var dp DataPoint
 		err = rows.Scan(&dp.Time, &dp.Open, &dp.High, &dp.Low, &dp.Close, &dp.UpVolume, &dp.DownVolume, &dp.UpTicks, &dp.DownTicks, &dp.OpenInterest)
@@ -159,6 +160,11 @@ func GetDataPoints(from *time.Time, to *time.Time, config *DataConfig, prodLoc *
 		//--- Call aggregator in data product's timezone so the aggregator can work with the session
 		dp.Time = dp.Time.In(prodLoc)
 		da.Add(&dp)
+
+		count++
+		if limit > 0 && count >= limit {
+			break
+		}
 	}
 
 	da.Flush()

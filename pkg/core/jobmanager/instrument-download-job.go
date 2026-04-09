@@ -191,7 +191,7 @@ func recalcDailyBars(blk *db.DataBlock, session *types.TradingSession, prodLoc *
 	config := ds.NewDataConfig(blk.SystemCode, blk.Symbol)
 	da5m   := ds.NewIdentityAggregator(5)
 
-	err := ds.GetDataPoints(nil, nil, config, prodLoc, da5m)
+	err := ds.GetDataPoints(nil, nil, config, prodLoc, da5m, 0)
 	if err != nil {
 		return err
 	}
