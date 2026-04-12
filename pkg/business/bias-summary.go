@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/core/req"
 	"github.com/algotiqa/data-collector/pkg/core"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/ds"
@@ -40,7 +41,6 @@ type BiasSummaryResponse struct {
 	BiasAnalysis  *db.BiasAnalysis     `json:"biasAnalysis"`
 	BrokerProduct *db.BrokerProduct    `json:"brokerProduct"`
 	Result        [7]*DataPointDowList `json:"result"`
-	config        *core.QueryConfig
 }
 
 //-----------------------------------------------------------------------------
@@ -110,25 +110,29 @@ type DataPointEntry struct {
 
 //=============================================================================
 
-func GetBiasSummaryInfo(tx *gorm.DB, c *auth.Context, id uint) (*BiasSummaryResponse, error) {
+func GetBiasSummaryInfo(tx *gorm.DB, c *auth.Context, id uint) (*BiasSummaryResponse, *core.QueryConfig, error) {
 	c.Log.Info("GetBiasSummary: Getting bias analysis", "id", id)
 
 	ba, err := db.GetBiasAnalysisById(tx, id)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+
+	if ba == nil {
+		return nil, nil, req.NewNotFoundError("Bias analysis not found")
 	}
 
 	var config *core.QueryConfig
 	config, err = CreateQueryConfig(tx, ba.DataInstrumentId, "")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var bp *db.BrokerProduct
 	bp, err = db.GetBrokerProductById(tx, ba.BrokerProductId)
 	if err != nil {
 		c.Log.Error("GetBiasSummaryInfo: Could not retrieve broker product", "error", err.Error())
-		return nil, err
+		return nil, nil, err
 	}
 
 	c.Log.Info("GetBiasSummary: Found bias analysis", "id", id, "name", ba.Name)
@@ -137,37 +141,32 @@ func GetBiasSummaryInfo(tx *gorm.DB, c *auth.Context, id uint) (*BiasSummaryResp
 		BiasAnalysis:  ba,
 		BrokerProduct: bp,
 		Result:        [7]*DataPointDowList{},
-		config:        config,
-	}, nil
+	}, config, nil
 }
 
 //=============================================================================
 
-func GetBiasSummaryData(c *auth.Context, id uint, bsr *BiasSummaryResponse) error {
-	loc, err := time.LoadLocation(bsr.config.DataProduct.Timezone)
+func GetBiasSummaryData(c *auth.Context, spec *QuerySpec, bsr *BiasSummaryResponse) error {
+	spec.Timeframe = "30"
+	spec.Timezone  = ""
+
+	params, err := NewQueryParams(spec)
 	if err != nil {
-		return err
+		return req.NewBadRequestError(err.Error())
 	}
 
-	da := ds.NewSimpleAggregator(ds.NewQuantizer15mTo30m())
+	params.Aggregator = ds.NewSimpleAggregator(ds.NewQuantizer15mTo30m())
+	params.Reduction  = 0
+	params.Limit      = 0
 
-	params := &QueryParams{
-		TargetLoc : loc,
-		ProductLoc: loc,
-		From      : nil,
-		To        : nil,
-		Reduction : 0,
-		Aggregator: da,
-	}
-
-	dataPoints, err := getDataPoints(params, bsr.config)
+	dataPoints, err := getDataPoints(params, spec.Config)
 	if err != nil {
 		return err
 	}
 
 	for i, dpCurr := range dataPoints {
 		if i > 0 {
-			dpPrev := dataPoints[i-1]
+			dpPrev  := dataPoints[i-1]
 			dpDelta := newDataPointDelta(dpPrev, dpCurr)
 			bsr.Add(dpDelta)
 		}
@@ -193,16 +192,16 @@ func newDataPointDelta(dpPrev, dpCurr *ds.DataPoint) *DataPointDelta {
 	y, m, d := slotTime.Date()
 	hour := slotTime.Hour()
 	mins := slotTime.Minute()
-	dow := slotTime.Weekday()
+	dow  := slotTime.Weekday()
 
 	return &DataPointDelta{
-		Year:  y,
+		Year : y,
 		Month: int(m),
-		Day:   d,
-		Hour:  hour,
-		Min:   mins,
+		Day  : d,
+		Hour : hour,
+		Min  : mins,
 		Delta: delta,
-		Dow:   int(dow),
+		Dow  : int(dow),
 	}
 }
 

@@ -27,6 +27,7 @@ package service
 import (
 	"github.com/algotiqa/core/auth"
 	"github.com/algotiqa/data-collector/pkg/business"
+	"github.com/algotiqa/data-collector/pkg/core"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"gorm.io/gorm"
 )
@@ -259,14 +260,15 @@ func getBiasSummary(c *auth.Context) {
 
 	if err == nil {
 		var bsr *business.BiasSummaryResponse
-
+		var cfg *core.QueryConfig
 		err = db.RunInTransaction(func(tx *gorm.DB) error {
-			bsr, err = business.GetBiasSummaryInfo(tx, c, id)
+			bsr, cfg, err = business.GetBiasSummaryInfo(tx, c, id)
 			return err
 		})
 
 		if err == nil {
-			err = business.GetBiasSummaryData(c, id, bsr)
+			spec := createQuerySpec(c, id, cfg)
+			err = business.GetBiasSummaryData(c, spec, bsr)
 			if err == nil {
 				_ = c.ReturnObject(bsr)
 				return
