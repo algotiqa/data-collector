@@ -25,15 +25,11 @@ THE SOFTWARE.
 package core
 
 import (
-	"errors"
-	"strconv"
 	"strings"
 
-	"github.com/algotiqa/core/req"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/ds"
 	"github.com/algotiqa/types"
-	"gorm.io/gorm"
 )
 
 //=============================================================================
@@ -156,25 +152,12 @@ func NewQueryConfig(i *db.DataInstrument, p *db.DataProduct, instruments *[]db.D
 
 //=============================================================================
 
-func GetTradingSession(tx *gorm.DB, id string, dp *db.DataProduct) (*types.TradingSession, error) {
-	if id == "" || id == "0" {
-		return types.NewTradingSession(dp.TradingSessionConfig)
+func GetTradingSession(sessionConfig string, dp *db.DataProduct) (*types.TradingSession, error) {
+	if sessionConfig == "" {
+		sessionConfig = dp.TradingSessionConfig
 	}
 
-	sessId,err := strconv.Atoi(id)
-	if err != nil {
-		return nil, req.NewBadRequestError("Bad sessionId parameter: %v", id)
-	}
-
-	ts,err1 := db.GetTradingSessionById(tx, uint(sessId))
-	if err1 != nil {
-		return nil, err1
-	}
-	if ts == nil {
-		return nil, errors.New("trading session not found: "+strconv.Itoa(sessId))
-	}
-
-	return types.NewTradingSession(ts.Session)
+	return types.NewTradingSession(sessionConfig)
 }
 
 //=============================================================================

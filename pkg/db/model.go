@@ -39,15 +39,6 @@ type Common struct {
 }
 
 //=============================================================================
-
-type TradingSession struct {
-	Common
-	Username string `json:"username"`
-	Name     string `json:"name"`
-	Session  string `json:"session"`
-}
-
-//=============================================================================
 //===
 //=== Data entities
 //===
@@ -296,6 +287,5 @@ func (IngestionJob)   TableName() string { return "ingestion_job"   }
 func (DownloadJob)    TableName() string { return "download_job"    }
 func (BiasAnalysis)   TableName() string { return "bias_analysis"   }
 func (BiasConfig)     TableName() string { return "bias_config"     }
-func (TradingSession) TableName() string { return "trading_session" }
 
 //=============================================================================

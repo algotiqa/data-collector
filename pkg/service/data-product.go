@@ -120,8 +120,8 @@ func analyzeDataProduct(c *auth.Context) {
 
 	if err == nil {
 		err = db.RunInTransaction(func(tx *gorm.DB) error {
-			sessionId := c.GetParamAsString("sessionId", "")
-			cfg, err1 := business.CreateQueryConfigForProduct(c, tx, id, sessionId)
+			sessionConfig := c.GetParamAsString("sessionConfig", "")
+			cfg, err1 := business.CreateQueryConfigForProduct(c, tx, id, sessionConfig)
 			config = cfg
 			return err1
 		})

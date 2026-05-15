@@ -45,7 +45,7 @@ func GetDataInstrumentsByProductId(c *auth.Context, tx *gorm.DB, productId uint,
 
 //=============================================================================
 
-func CreateQueryConfigForProduct(c *auth.Context, tx *gorm.DB, id uint, sessionId string) (*core.QueryConfig, error) {
+func CreateQueryConfigForProduct(c *auth.Context, tx *gorm.DB, id uint, sessionConfig string) (*core.QueryConfig, error) {
 	var i *db.DataInstrument
 	var session *types.TradingSession
 
@@ -57,7 +57,7 @@ func CreateQueryConfigForProduct(c *auth.Context, tx *gorm.DB, id uint, sessionI
 
 		i, err = db.GetVirtualDataInstrumentByProductId(tx, dp.Id)
 		if err == nil {
-			session,err = core.GetTradingSession(tx, sessionId, dp)
+			session,err = core.GetTradingSession(sessionConfig, dp)
 			if err == nil {
 				if i != nil {
 					var instruments *[]db.DataInstrument

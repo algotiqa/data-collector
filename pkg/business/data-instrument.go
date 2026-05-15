@@ -51,7 +51,7 @@ func GetDataInstruments(tx *gorm.DB, c *auth.Context) (*[]db.DataInstrumentFull,
 
 //=============================================================================
 
-func CreateQueryConfig(tx *gorm.DB, id uint, sessionId string) (*core.QueryConfig, error) {
+func CreateQueryConfig(tx *gorm.DB, id uint, sessionConfig string) (*core.QueryConfig, error) {
 	var dp *db.DataProduct
 	var session *types.TradingSession
 
@@ -72,7 +72,7 @@ func CreateQueryConfig(tx *gorm.DB, id uint, sessionId string) (*core.QueryConfi
 				instruments, err = db.GetRollingDataInstrumentsByProductIdFast(tx, dp.Id, dp.Months)
 			}
 
-			session,err = core.GetTradingSession(tx, sessionId, dp)
+			session,err = core.GetTradingSession(sessionConfig, dp)
 			if err == nil {
 				return core.NewQueryConfig(i, dp, instruments, session), nil
 			}
