@@ -30,6 +30,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/algotiqa/core/dbms"
 	"github.com/algotiqa/data-collector/pkg/app"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"gorm.io/gorm"
@@ -102,7 +103,7 @@ func DisconnectAll() {
 //=============================================================================
 
 func initCache() error {
-	return db.RunInTransaction(func(tx *gorm.DB) error {
+	return dbms.RunInTransaction(func(tx *gorm.DB) error {
 		blocksMap, err := loadDataBlocks(tx)
 		if err != nil {
 			return err

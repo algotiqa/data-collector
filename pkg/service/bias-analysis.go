@@ -26,9 +26,9 @@ package service
 
 import (
 	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/core/dbms"
 	"github.com/algotiqa/data-collector/pkg/business"
 	"github.com/algotiqa/data-collector/pkg/core"
-	"github.com/algotiqa/data-collector/pkg/db"
 	"gorm.io/gorm"
 )
 
@@ -44,7 +44,7 @@ func getBiasAnalyses(c *auth.Context) {
 		details, err := c.GetParamAsBool("details", false)
 
 		if err == nil {
-			err = db.RunInTransaction(func(tx *gorm.DB) error {
+			err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 				list, err := business.GetBiasAnalyses(tx, c, filter, offset, limit, details)
 
 				if err != nil {
@@ -68,7 +68,7 @@ func getBiasAnalysisById(c *auth.Context) {
 		details, err := c.GetParamAsBool("details", false)
 
 		if err == nil {
-			err = db.RunInTransaction(func(tx *gorm.DB) error {
+			err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 				pb, err := business.GetBiasAnalysisById(tx, c, id, details)
 
 				if err != nil {
@@ -90,7 +90,7 @@ func addBiasAnalysis(c *auth.Context) {
 	err := c.BindParamsFromBody(&pds)
 
 	if err == nil {
-		err = db.RunInTransaction(func(tx *gorm.DB) error {
+		err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 			ts, err := business.AddBiasAnalysis(tx, c, &pds)
 
 			if err != nil {
@@ -114,7 +114,7 @@ func updateBiasAnalysis(c *auth.Context) {
 		id, err := c.GetIdFromUrl()
 
 		if err == nil {
-			err = db.RunInTransaction(func(tx *gorm.DB) error {
+			err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 				ts, err := business.UpdateBiasAnalysis(tx, c, id, &pds)
 
 				if err != nil {
@@ -135,7 +135,7 @@ func deleteBiasAnalysis(c *auth.Context) {
 	id, err := c.GetIdFromUrl()
 
 	if err == nil {
-		err = db.RunInTransaction(func(tx *gorm.DB) error {
+		err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 			ba, err := business.DeleteBiasAnalysis(tx, c, id)
 
 			if err != nil {
@@ -157,7 +157,7 @@ func getBiasConfigsByAnalysisId(c *auth.Context) {
 	id, err := c.GetIdFromUrl()
 
 	if err == nil {
-		err = db.RunInTransaction(func(tx *gorm.DB) error {
+		err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 			list, err := business.GetBiasConfigsByAnalysisId(tx, c, id)
 
 			if err != nil {
@@ -181,7 +181,7 @@ func addBiasConfig(c *auth.Context) {
 		err = c.BindParamsFromBody(&bcs)
 
 		if err == nil {
-			err = db.RunInTransaction(func(tx *gorm.DB) error {
+			err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 				bc, err := business.AddBiasConfig(tx, c, baId, &bcs)
 
 				if err != nil {
@@ -210,7 +210,7 @@ func updateBiasConfig(c *auth.Context) {
 			err = c.BindParamsFromBody(&bcs)
 
 			if err == nil {
-				err = db.RunInTransaction(func(tx *gorm.DB) error {
+				err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 					bc, err := business.UpdateBiasConfig(tx, c, baId, bcId, &bcs)
 
 					if err != nil {
@@ -236,7 +236,7 @@ func deleteBiasConfig(c *auth.Context) {
 		bcId, err = c.GetId2FromUrl()
 
 		if err == nil {
-			err = db.RunInTransaction(func(tx *gorm.DB) error {
+			err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 				bc, err := business.DeleteBiasConfig(tx, c, baId, bcId)
 
 				if err != nil {
@@ -261,7 +261,7 @@ func getBiasSummary(c *auth.Context) {
 	if err == nil {
 		var bsr *business.BiasSummaryResponse
 		var cfg *core.QueryConfig
-		err = db.RunInTransaction(func(tx *gorm.DB) error {
+		err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 			bsr, cfg, err = business.GetBiasSummaryInfo(tx, c, id)
 			return err
 		})
@@ -293,7 +293,7 @@ func runBacktest(c *auth.Context) {
 		if err == nil {
 			var bbr *business.BiasBacktestResponse
 
-			err = db.RunInTransaction(func(tx *gorm.DB) error {
+			err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 				bbr, err = business.GetBacktestInfo(tx, c, id, &bts)
 				return err
 			})

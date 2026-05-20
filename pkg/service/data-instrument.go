@@ -26,6 +26,7 @@ package service
 
 import (
 	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/core/dbms"
 	"github.com/algotiqa/data-collector/pkg/business"
 	"github.com/algotiqa/data-collector/pkg/core"
 	"github.com/algotiqa/data-collector/pkg/core/jobmanager"
@@ -36,7 +37,7 @@ import (
 //=============================================================================
 
 func getDataInstruments(c *auth.Context) {
-	err := db.RunInTransaction(func(tx *gorm.DB) error {
+	err := dbms.RunInTransaction(func(tx *gorm.DB) error {
 		list, err := business.GetDataInstruments(tx, c)
 
 		if err != nil {
@@ -59,7 +60,7 @@ func getDataInstrumentById(c *auth.Context) {
 		details, err = c.GetParamAsBool("details", false)
 
 		if err == nil {
-			err = db.RunInTransaction(func(tx *gorm.DB) error {
+			err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 				var di *business.DataInstrumentExt
 				di, err = business.GetDataInstrumentById(tx, c, id, details)
 
@@ -84,7 +85,7 @@ func getDataInstrumentData(c *auth.Context) {
 	id, err := c.GetIdFromUrl()
 
 	if err == nil {
-		err = db.RunInTransaction(func(tx *gorm.DB) error {
+		err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 			sessionConfig := c.GetParamAsString("sessionConfig", "")
 			cfg, err1 := business.CreateQueryConfig(tx, id, sessionConfig)
 			config = cfg
@@ -112,7 +113,7 @@ func reloadDataInstrumentData(c *auth.Context) {
 	if err == nil {
 		var job *db.DownloadJob
 		var blk *db.DataBlock
-		err = db.RunInTransaction(func(tx *gorm.DB) error {
+		err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 			job, blk, err = business.ReloadDataInstrumentData(tx, c, id)
 			return err
 		})

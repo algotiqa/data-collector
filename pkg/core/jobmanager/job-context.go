@@ -28,6 +28,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/algotiqa/core/dbms"
 	"github.com/algotiqa/core/msg"
 	"github.com/algotiqa/data-collector/pkg/core/messaging/collector/rollover"
 	"github.com/algotiqa/data-collector/pkg/db"
@@ -68,7 +69,7 @@ func (jc *JobContext) GoToSleep() {
 //=============================================================================
 
 func (jc *JobContext) UpdateJob(blkStatus db.DBStatus, jobStatus db.DJStatus, jobErr string, sendRecalcMsg bool) error {
-	return db.RunInTransaction(func(tx *gorm.DB) error {
+	return dbms.RunInTransaction(func(tx *gorm.DB) error {
 		blk := jc.userConnection.scheduledJob.block
 		job := jc.userConnection.scheduledJob.job
 
@@ -83,7 +84,7 @@ func (jc *JobContext) UpdateJob(blkStatus db.DBStatus, jobStatus db.DJStatus, jo
 		if err == nil {
 			err = db.UpdateDownloadJob(tx, job)
 			if err == nil && sendRecalcMsg {
-				err = jc.sendRollRecalcMessage()
+				err = jc.sendRollRecalcMessage(tx)
 			}
 		}
 
@@ -100,7 +101,7 @@ func (jc *JobContext) UpdateJob(blkStatus db.DBStatus, jobStatus db.DJStatus, jo
 //=============================================================================
 
 func (jc *JobContext) EndJob() error {
-	err := db.RunInTransaction(func(tx *gorm.DB) error {
+	err := dbms.RunInTransaction(func(tx *gorm.DB) error {
 		blk := jc.userConnection.scheduledJob.block
 		job := jc.userConnection.scheduledJob.job
 
@@ -116,7 +117,7 @@ func (jc *JobContext) EndJob() error {
 		if err == nil {
 			err = db.DeleteDownloadJob(tx, job.Id)
 			if err == nil {
-				err = jc.sendRollRecalcMessage()
+				err = jc.sendRollRecalcMessage(tx)
 			}
 		}
 
@@ -162,14 +163,14 @@ func (jc *JobContext) SleepJob() error {
 
 //=============================================================================
 
-func (jc *JobContext) sendRollRecalcMessage() error {
+func (jc *JobContext) sendRollRecalcMessage(tx *gorm.DB) error {
 	sj := jc.userConnection.scheduledJob
 
 	job := &rollover.RecalcJob{
 		DataBlockId: sj.block.Id,
 	}
 
-	err := msg.SendMessage(msg.ExCollector, msg.SourceRollRecalcJob, msg.TypeCreate, job)
+	err := msg.SendMessage(msg.ExCollector, msg.SourceRollRecalcJob, msg.TypeCreate, job, tx)
 
 	if err != nil {
 		slog.Error("sendRollRecalcJobMessage: Could not publish the upload message", "error", err.Error())

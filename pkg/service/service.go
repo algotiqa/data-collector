@@ -38,7 +38,7 @@ import (
 
 func Init(router *gin.Engine, cfg *app.Config, logger *slog.Logger) {
 
-	ctrl := auth.NewOidcController(cfg.Authentication.Authority, req.GetClient("bf"), logger, cfg)
+	ctrl := auth.NewOidcController(cfg.Authentication.Authority, req.GetDefaultClient(), logger, cfg)
 
 	router.GET  ("/api/collector/v1/config/parsers",                 ctrl.Secure(getParsers, roles.Admin_User_Service))
 

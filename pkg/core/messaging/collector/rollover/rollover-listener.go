@@ -30,6 +30,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/algotiqa/core/dbms"
 	"github.com/algotiqa/core/msg"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/ds"
@@ -61,7 +62,7 @@ func Recalc(job *RecalcJob) bool {
 func getProductsToRecalc(blockId uint) (*[]uint, error) {
 	var list *[]uint
 
-	err2 := db.RunInTransaction(func(tx *gorm.DB) error {
+	err2 := dbms.RunInTransaction(func(tx *gorm.DB) error {
 		var err error
 		list, err = db.GetDataProductsByBlockId(tx, blockId)
 		return err
@@ -140,7 +141,7 @@ func getIntrumentSet(dpId uint) (*db.DataProduct, *[]db.DataInstrumentExt, error
 	var dp *db.DataProduct
 	var list *[]db.DataInstrumentExt
 
-	err2 := db.RunInTransaction(func(tx *gorm.DB) error {
+	err2 := dbms.RunInTransaction(func(tx *gorm.DB) error {
 		var err error
 		dp, err = db.GetDataProductById(tx, dpId)
 		if err == nil {
@@ -238,7 +239,7 @@ func updateRolledInstruments(list []*db.DataInstrumentExt) error {
 		return nil
 	}
 
-	err := db.RunInTransaction(func(tx *gorm.DB) error {
+	err := dbms.RunInTransaction(func(tx *gorm.DB) error {
 		for _, die := range list {
 			i := convertInstrument(die)
 			err := db.UpdateDataInstrument(tx, i)
@@ -312,16 +313,17 @@ func recalcVirtualInstrumentStatus(dp *db.DataProduct, instruments *[]db.DataIns
 
 	var vi *db.DataInstrument
 
-	err := db.RunInTransaction(func(tx *gorm.DB) error {
+	err := dbms.RunInTransaction(func(tx *gorm.DB) error {
 		var err error
 		vi, err = db.GetVirtualDataInstrumentByProductId(tx, dp.Id)
 		if err == nil {
 			if vi == nil {
 				return errors.New("Cannot find Virtual Data instrument for product with id: " + strconv.Itoa(int(dp.Id)))
 			}
-			err = sendEventToUser(dp, instruments, emptyDie, noMatchDie, vi)
+
+			err = db.UpdateDataInstrument(tx, vi)
 			if err == nil {
-				return db.UpdateDataInstrument(tx, vi)
+				return sendEventToUser(tx, dp, instruments, emptyDie, noMatchDie, vi)
 			}
 		}
 		return err
@@ -338,14 +340,14 @@ func recalcVirtualInstrumentStatus(dp *db.DataProduct, instruments *[]db.DataIns
 
 //=============================================================================
 
-func sendEventToUser(dp *db.DataProduct, instruments *[]db.DataInstrumentExt, empty, noMatch *db.DataInstrumentExt, vi *db.DataInstrument) error {
+func sendEventToUser(tx *gorm.DB, dp *db.DataProduct, instruments *[]db.DataInstrumentExt, empty, noMatch *db.DataInstrumentExt, vi *db.DataInstrument) error {
 	if empty == nil && noMatch == nil {
 		vi.RolloverStatus = db.DIRollStatusReady
 		return msg.SendEventByCode(dp.Username, "dc.dataProduct.ready", map[string]interface{}{
 			"root":        dp.Symbol,
 			"virtual":     vi.Symbol,
 			"instruments": len(*instruments),
-		})
+		}, tx)
 	}
 
 	if empty != nil {
@@ -354,7 +356,7 @@ func sendEventToUser(dp *db.DataProduct, instruments *[]db.DataInstrumentExt, em
 			"root":    dp.Symbol,
 			"symbol":  empty.Symbol,
 			"virtual": vi.Symbol,
-		})
+		}, tx)
 	}
 
 	vi.RolloverStatus = db.DIRollStatusNoMatch
@@ -363,7 +365,7 @@ func sendEventToUser(dp *db.DataProduct, instruments *[]db.DataInstrumentExt, em
 		"symbol":  noMatch.Symbol,
 		"system":  dp.SystemCode,
 		"virtual": vi.Symbol,
-	})
+	}, tx)
 }
 
 //=============================================================================

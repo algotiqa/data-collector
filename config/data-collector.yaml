@@ -1,25 +1,30 @@
 application:
   bindAddress: :8446
-  production: false
-  debug: false
+  production : false
+  debug      : false
 database:
-  address: localhost:3402
-  name: collector
+  address : localhost:3402
+  name    : collector
   username: admin
   password: admin
 authentication:
-  authority: https://algotiqa-server:8443/auth/realms/algotiqa
-  clientId: algotiqa-backend
+  authority   : https://algotiqa-server:8443/auth/realms/algotiqa
+  clientId    : algotiqa-backend
   clientSecret: ddKGvsqWMKQT4v4lWS03Jr9i3ZEJHzv1
 platform:
   system: https://algotiqa-server:8449/api/system
 messaging:
-  address: localhost:8450
+  address : localhost:8450
   username: admin
   password: admin
+  journal:
+    directory      : .
+    queueSize      : 1000
+    compactMessages: 1000
+    dbSpoolInterval: 2
 datastore:
-  address: localhost:3410
-  name: datastore
+  address : localhost:3410
+  name    : datastore
   username: admin
   password: admin
-  staging:  staging
+  staging :  staging

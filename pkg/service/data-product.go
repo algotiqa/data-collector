@@ -31,9 +31,9 @@ import (
 	"time"
 
 	"github.com/algotiqa/core/auth"
+	"github.com/algotiqa/core/dbms"
 	"github.com/algotiqa/data-collector/pkg/business"
 	"github.com/algotiqa/data-collector/pkg/core"
-	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/ds"
 	"gorm.io/gorm"
 )
@@ -47,7 +47,7 @@ func getDataInstrumentsByProductId(c *auth.Context) {
 		var stored bool
 		stored, err = c.GetParamAsBool("stored", false)
 		if err == nil {
-			err = db.RunInTransaction(func(tx *gorm.DB) error {
+			err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 				list, err := business.GetDataInstrumentsByProductId(c, tx, pId, stored)
 
 				if err != nil {
@@ -88,7 +88,7 @@ func uploadDataInstrumentData(c *auth.Context) {
 						_ = part.Close()
 
 						if err == nil {
-							err = db.RunInTransaction(func(tx *gorm.DB) error {
+							err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 								return business.AddDataInstrumentAndJob(tx, c, productId, spec, filename, bytes)
 							})
 
@@ -119,7 +119,7 @@ func analyzeDataProduct(c *auth.Context) {
 	id, err := c.GetIdFromUrl()
 
 	if err == nil {
-		err = db.RunInTransaction(func(tx *gorm.DB) error {
+		err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 			sessionConfig := c.GetParamAsString("sessionConfig", "")
 			cfg, err1 := business.CreateQueryConfigForProduct(c, tx, id, sessionConfig)
 			config = cfg

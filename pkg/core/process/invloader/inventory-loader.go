@@ -30,6 +30,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/algotiqa/core/dbms"
 	"github.com/algotiqa/core/msg"
 	"github.com/algotiqa/data-collector/pkg/app"
 	"github.com/algotiqa/data-collector/pkg/core/jobmanager"
@@ -113,7 +114,7 @@ func getDataProductsToWork() (*[]db.DataProduct, error) {
 
 	var list *[]db.DataProduct
 
-	err := db.RunInTransaction(func(tx *gorm.DB) error {
+	err := dbms.RunInTransaction(func(tx *gorm.DB) error {
 		var err error
 		list, err = db.GetDataProducts(tx, filter, 0, 1000)
 		return err
@@ -136,7 +137,7 @@ func processDataProduct(dp *db.DataProduct) {
 	} else {
 		list := convertInstruments(dp.Id, instruments)
 
-		err = db.RunInTransaction(func(tx *gorm.DB) error {
+		err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 			jobs, err = addDataInstruments(tx, dp, list)
 			if err != nil {
 				return errors.New("Cannot add new data instruments : " + err.Error())
@@ -151,7 +152,7 @@ func processDataProduct(dp *db.DataProduct) {
 						//--- have to send a special message indicating this. If we don't send this message,
 						//--- the recalc will never be triggered
 
-						err = sendRollRecalcMessage(dp.Id)
+						err = sendRollRecalcMessage(tx, dp.Id)
 					}
 				}
 			}
@@ -294,12 +295,12 @@ func calcLoadTo(expDate *time.Time) types.Date {
 
 //=============================================================================
 
-func sendRollRecalcMessage(id uint) error {
+func sendRollRecalcMessage(tx *gorm.DB, id uint) error {
 	job := &rollover.RecalcJob{
 		DataProductId: id,
 	}
 
-	err := msg.SendMessage(msg.ExCollector, msg.SourceRollRecalcJob, msg.TypeCreate, job)
+	err := msg.SendMessage(msg.ExCollector, msg.SourceRollRecalcJob, msg.TypeCreate, job, tx)
 
 	if err != nil {
 		slog.Error("sendRollRecalcJobMessage: Could not publish the upload message", "error", err.Error())

@@ -28,6 +28,7 @@ import (
 	"encoding/json"
 	"log/slog"
 
+	"github.com/algotiqa/core/dbms"
 	"github.com/algotiqa/core/msg"
 	"github.com/algotiqa/data-collector/pkg/core/jobmanager"
 	"github.com/algotiqa/data-collector/pkg/db"
@@ -78,7 +79,7 @@ func addDataProduct(dpm *DataProductMessage) bool {
 	slog.Info("addDataProduct: Data product change received", "id", dpm.DataProduct.Id)
 
 	dp := &db.DataProduct{}
-	err := db.RunInTransaction(func(tx *gorm.DB) error {
+	err := dbms.RunInTransaction(func(tx *gorm.DB) error {
 		dp.Id                   = dpm.DataProduct.Id
 		dp.Symbol               = dpm.DataProduct.Symbol
 		dp.Username             = dpm.DataProduct.Username
@@ -120,7 +121,7 @@ func addDataProduct(dpm *DataProductMessage) bool {
 func setBrokerProduct(bpm *BrokerProductMessage) bool {
 	slog.Info("setBrokerProduct: Broker product change received", "id", bpm.BrokerProduct.Id)
 
-	err := db.RunInTransaction(func(tx *gorm.DB) error {
+	err := dbms.RunInTransaction(func(tx *gorm.DB) error {
 		bp := &db.BrokerProduct{}
 
 		bp.Id = bpm.BrokerProduct.Id

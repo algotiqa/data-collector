@@ -29,13 +29,13 @@ import (
 
 	"github.com/algotiqa/core/auth"
 	"github.com/algotiqa/core/boot"
+	"github.com/algotiqa/core/dbms"
 	"github.com/algotiqa/core/msg"
 	"github.com/algotiqa/core/req"
 	"github.com/algotiqa/data-collector/pkg/app"
 	"github.com/algotiqa/data-collector/pkg/core/jobmanager"
 	"github.com/algotiqa/data-collector/pkg/core/messaging"
 	"github.com/algotiqa/data-collector/pkg/core/process"
-	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/ds"
 	"github.com/algotiqa/data-collector/pkg/platform"
 	"github.com/algotiqa/data-collector/pkg/service"
@@ -53,7 +53,7 @@ func main() {
 	logger := boot.InitLogger(component, &cfg.Application)
 	engine := boot.InitEngine(logger, &cfg.Application)
 	initClients()
-	db.InitDatabase(&cfg.Database)
+	dbms.InitDatabase(&cfg.Database)
 	ds.InitDatastore(&cfg.Datastore)
 	platform.Init(&cfg.Platform)
 	auth.InitAuthentication(&cfg.Authentication)
@@ -69,7 +69,7 @@ func main() {
 
 func initClients() {
 	slog.Info("Initializing clients...")
-	req.AddClient("bf", "ca.crt", "server.crt", "server.key")
+	req.AddDefaultClient("ca.crt", "server.crt", "server.key")
 }
 
 //=============================================================================

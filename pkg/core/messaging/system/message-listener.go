@@ -28,6 +28,7 @@ import (
 	"encoding/json"
 	"log/slog"
 
+	"github.com/algotiqa/core/dbms"
 	"github.com/algotiqa/core/msg"
 	"github.com/algotiqa/data-collector/pkg/core/jobmanager"
 	"github.com/algotiqa/data-collector/pkg/db"
@@ -66,7 +67,7 @@ func HandleMessage(m *msg.Message) bool {
 func handleSystemAdapterRestart() bool {
 	slog.Info("handleSystemAdapterRestart: Unsetting connection status flag to all connections")
 
-	err := db.RunInTransaction(func(tx *gorm.DB) error {
+	err := dbms.RunInTransaction(func(tx *gorm.DB) error {
 		return db.DisconnectAll(tx)
 	})
 
@@ -92,7 +93,7 @@ func handleConnectionChange(ccm *ConnectionChangeSystemMessage) bool {
 	slog.Info("handleConnectionChange: Updating connection status", "user", ccm.Username, "connectionCode", ccm.ConnectionCode, "status", ccm.Status)
 
 	connected := ccm.Status == ConnectionStatusConnected
-	err := db.RunInTransaction(func(tx *gorm.DB) error {
+	err := dbms.RunInTransaction(func(tx *gorm.DB) error {
 		return db.SetConnectionStatus(tx, ccm.Username, ccm.ConnectionCode, connected)
 	})
 

@@ -28,6 +28,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/algotiqa/core/dbms"
 	"github.com/algotiqa/data-collector/pkg/business"
 	"github.com/algotiqa/data-collector/pkg/core"
 	"github.com/algotiqa/data-collector/pkg/db"
@@ -77,7 +78,7 @@ func setDataBlockInLoading(job *db.IngestionJob) (*db.DataBlock, error) {
 	var b *db.DataBlock
 	var err error
 
-	err = db.RunInTransaction(func(tx *gorm.DB) error {
+	err = dbms.RunInTransaction(func(tx *gorm.DB) error {
 		b, err = db.GetDataBlockById(tx, job.DataBlockId)
 		if err != nil {
 			return err
@@ -156,7 +157,7 @@ func retrieveLocation(timezone string) (*time.Location, error) {
 func retrieveConfig(id uint) (*core.QueryConfig, error) {
 	var config *core.QueryConfig
 
-	err := db.RunInTransaction(func(tx *gorm.DB) error {
+	err := dbms.RunInTransaction(func(tx *gorm.DB) error {
 		cfg, err := business.CreateQueryConfig(tx, id, "")
 		config = cfg
 		return err
@@ -168,7 +169,7 @@ func retrieveConfig(id uint) (*core.QueryConfig, error) {
 //=============================================================================
 
 func setDataBlockInProcessing(job *db.IngestionJob, b *db.DataBlock, dr *DataRange) error {
-	return db.RunInTransaction(func(tx *gorm.DB) error {
+	return dbms.RunInTransaction(func(tx *gorm.DB) error {
 		if b.DataFrom.IsNil() || b.DataFrom > dr.FromDay {
 			b.DataFrom = dr.FromDay
 		}
@@ -190,7 +191,7 @@ func setDataBlockInProcessing(job *db.IngestionJob, b *db.DataBlock, dr *DataRan
 //=============================================================================
 
 func setDataBlockInReady(block *db.DataBlock) error {
-	return db.RunInTransaction(func(tx *gorm.DB) error {
+	return dbms.RunInTransaction(func(tx *gorm.DB) error {
 		block.Status = db.DBStatusReady
 		block.Progress = 100
 
@@ -201,7 +202,7 @@ func setDataBlockInReady(block *db.DataBlock) error {
 //=============================================================================
 
 func setJobInError(err error, job *db.IngestionJob, block *db.DataBlock) {
-	_ = db.RunInTransaction(func(tx *gorm.DB) error {
+	_ = dbms.RunInTransaction(func(tx *gorm.DB) error {
 		block.Status = db.DBStatusError
 		job.Error = err.Error()
 		_ = db.UpdateDataBlock(tx, block)

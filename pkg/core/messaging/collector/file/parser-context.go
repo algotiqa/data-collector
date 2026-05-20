@@ -28,6 +28,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/algotiqa/core/dbms"
 	"github.com/algotiqa/data-collector/pkg/core"
 	"github.com/algotiqa/data-collector/pkg/db"
 	"github.com/algotiqa/data-collector/pkg/ds"
@@ -120,7 +121,7 @@ func (c *ParserContext) updateProgress() error {
 	if c.Block.Progress != curProgress {
 		c.Block.Progress = curProgress
 
-		return db.RunInTransaction(func(tx *gorm.DB) error {
+		return dbms.RunInTransaction(func(tx *gorm.DB) error {
 			err := db.UpdateDataBlock(tx, c.Block)
 			if err != nil {
 				return err

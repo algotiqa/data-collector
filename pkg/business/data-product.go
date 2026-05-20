@@ -131,7 +131,7 @@ func AddDataInstrumentAndJob(tx *gorm.DB, c *auth.Context, productId uint, spec 
 		return err
 	}
 
-	return sendIngestJobMessage(c, job)
+	return sendIngestJobMessage(tx, c, job)
 }
 
 //=============================================================================
@@ -226,8 +226,8 @@ func updateDataInstrument(tx *gorm.DB, i *db.DataInstrument, spec *DatafileUploa
 
 //=============================================================================
 
-func sendIngestJobMessage(c *auth.Context, job *db.IngestionJob) error {
-	err := msg.SendMessage(msg.ExCollector, msg.SourceUploadJob, msg.TypeCreate, job)
+func sendIngestJobMessage(tx *gorm.DB, c *auth.Context, job *db.IngestionJob) error {
+	err := msg.SendMessage(msg.ExCollector, msg.SourceUploadJob, msg.TypeCreate, job, tx)
 
 	if err != nil {
 		c.Log.Error("sendIngestJobMessage: Could not publish the upload message", "error", err.Error())
