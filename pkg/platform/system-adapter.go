@@ -61,7 +61,7 @@ func GetInstruments(username string, connectionCode string, root string) ([]Inst
 		return nil, err
 	}
 
-	client := req.GetClient("bf")
+	client := req.GetDefaultClient()
 	url := platform.System + "/v1/connections/" + connectionCode + "/roots/" + root + "/instruments"
 	err = req.DoGetOnBehalfOf(client, url, &res, token, username)
 
@@ -82,7 +82,7 @@ func GetPriceBars(username string, connectionCode string, symbol string, date ty
 		return nil, err
 	}
 
-	client := req.GetClient("bf")
+	client := req.GetDefaultClient()
 	url := platform.System + "/v1/connections/" + connectionCode + "/instruments/" + symbol + "/bars?date=" + strconv.Itoa(int(date))
 	err = req.DoGetOnBehalfOf(client, url, &res, token, username)
 
