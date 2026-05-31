@@ -3,7 +3,7 @@ module github.com/algotiqa/data-collector
 go 1.25.8
 
 require (
-	github.com/algotiqa/core v1.20.8
+	github.com/algotiqa/core v1.20.11
 	github.com/algotiqa/types v0.0.8
 	github.com/gin-gonic/gin v1.12.0
 	gorm.io/gorm v1.31.1
@@ -12,7 +12,6 @@ require (
 require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.9.2
-	gorm.io/driver/mysql v1.6.0
 )
 
 require (
@@ -69,4 +68,5 @@ require (
 	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
+	gorm.io/driver/mysql v1.6.0 // indirect
 )
