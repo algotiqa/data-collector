@@ -134,3 +134,9 @@ func DeleteBiasConfig(tx *gorm.DB, id uint) error {
 }
 
 //=============================================================================
+
+func DeleteBiasConfigsByAnalysisId(tx *gorm.DB, id uint) error {
+	return tx.Delete(&BiasConfig{}, "bias_analysis_id", id).Error
+}
+
+//=============================================================================

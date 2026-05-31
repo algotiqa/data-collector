@@ -39,8 +39,8 @@ func InitMessageListener() {
 	slog.Info("Starting message listeners...")
 
 	go msg.ReceiveMessages(msg.QuInventoryToCollector, inventory.HandleUpdateMessage)
-	go msg.ReceiveMessages(msg.QuSystemToCollector, system.HandleMessage)
-	go msg.ReceiveMessages(msg.QuCollectorToInternal, collector.HandleMessage)
+	go msg.ReceiveMessages(msg.QuSystemToCollector,    system.HandleMessage)
+	go msg.ReceiveMessages(msg.QuCollectorToInternal,  collector.HandleMessage)
 }
 
 //=============================================================================

@@ -61,9 +61,13 @@ func HandleUpdateMessage(m *msg.Message) bool {
 			return true
 		}
 
-		if m.Type == msg.TypeCreate || m.Type == msg.TypeUpdate {
+		if m.Type == msg.TypeCreate {
 			return setBrokerProduct(&bpm)
 		}
+		if m.Type == msg.TypeUpdate {
+			return setBrokerProduct(&bpm)
+		}
+		if m.Type == msg.TypeDelete { return deleteBrokerProduct(&bpm) }
 	} else if m.Source == msg.SourceTradingSystem {
 		//--- We don't care
 		return true
@@ -140,6 +144,44 @@ func setBrokerProduct(bpm *BrokerProductMessage) bool {
 		slog.Error("Raised error while processing message")
 	} else {
 		slog.Info("setBrokerProduct: Operation complete")
+	}
+
+	return err == nil
+}
+
+//=============================================================================
+
+func deleteBrokerProduct(bpm *BrokerProductMessage) bool {
+	id := bpm.BrokerProduct.Id
+	slog.Info("deleteBrokerProduct: Broker product deletion received", "id", id)
+
+	err := dbms.RunInTransaction(func(tx *gorm.DB) error {
+		filter := map[string]any{}
+		filter["broker_product_id"] = id
+		list,err := db.GetBiasAnalyses(tx, filter, 0, 5000)
+		if err != nil {
+			return err
+		}
+
+		for _, ba := range *list {
+			err = db.DeleteBiasConfigsByAnalysisId(tx, ba.Id)
+			if err != nil {
+				return err
+			}
+
+			err = db.DeleteBiasAnalysis(tx, ba.Id)
+			if err != nil {
+				return err
+			}
+		}
+
+		return db.DeleteBrokerProduct(tx, id)
+	})
+
+	if err != nil {
+		slog.Error("deleteBrokerProduct: Raised error while deleting broker product", "error", err.Error())
+	} else {
+		slog.Info("deleteBrokerProduct: Operation complete", "id", id)
 	}
 
 	return err == nil

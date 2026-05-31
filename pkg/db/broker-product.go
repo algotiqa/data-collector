@@ -59,3 +59,9 @@ func UpdateBrokerProduct(tx *gorm.DB, p *BrokerProduct) error {
 }
 
 //=============================================================================
+
+func DeleteBrokerProduct(tx *gorm.DB, id uint) error {
+	return tx.Delete(&BrokerProduct{}, id).Error
+}
+
+//=============================================================================
