@@ -138,7 +138,7 @@ func GetDataInstrumentDataById(c *auth.Context, spec *QuerySpec) (*DataInstrumen
 
 	return &DataInstrumentDataResponse{
 		Id:               spec.Id,
-		Symbol:           spec.Config.DataConfig.Symbol,
+		Symbol:           spec.Config.DataInstrument.Symbol,
 		From:             fromDate,
 		To:               toDate,
 		Timeframe:        params.Timeframe,
