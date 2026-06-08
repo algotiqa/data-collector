@@ -67,6 +67,12 @@ func AddDataProduct(tx *gorm.DB, p *DataProduct) error {
 
 //=============================================================================
 
+func DeleteDataProduct(tx *gorm.DB, id uint) error {
+	return tx.Delete(&DataProduct{}, id).Error
+}
+
+//=============================================================================
+
 func DisconnectAll(tx *gorm.DB) error {
 	return tx.Model(&DataProduct{}).
 		Where("supports_multiple_data = false").

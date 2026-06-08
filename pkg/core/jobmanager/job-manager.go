@@ -60,8 +60,13 @@ func Init(cfg *app.Config) {
 //===
 //=============================================================================
 
-func NewScheduledJob(block *db.DataBlock, job *db.DownloadJob) *ScheduledJob {
-	return &ScheduledJob{block, job, nil}
+func NewScheduledJob(username string, block *db.DataBlock, job *db.DownloadJob) *ScheduledJob {
+	sj := &ScheduledJob{}
+	sj.username = username
+	sj.block    = block
+	sj.job      = job
+
+	return sj
 }
 
 //=============================================================================
@@ -94,6 +99,12 @@ func SetConnection(systemCode, username, connCode string, connected bool) {
 
 func DisconnectAll() {
 	cache.disconnectAll()
+}
+
+//=============================================================================
+
+func CancelUserJobsOnProduct(username, systemCode, root string) bool {
+	return cache.cancelUserJobsOnProduct(username, systemCode, root)
 }
 
 //=============================================================================
@@ -187,16 +198,16 @@ func loadDownloadJobs(tx *gorm.DB, blocksMap map[uint]*db.DataBlock) error {
 				return errors.New("DataBlock not found! --> id:" + strconv.Itoa(int(job.DataBlockId)))
 			}
 
-			sj := NewScheduledJob(block, &job)
-			cache.addScheduledJob(sj)
-
 			if job.Status == db.DJStatusRunning {
 				job.Status = db.DJStatusWaiting
-				err = db.UpdateDownloadJob(tx, &job)
+				err = db.UpdateDownloadJob(tx, &job.DownloadJob)
 				if err != nil {
 					return err
 				}
 			}
+
+			sj := NewScheduledJob(job.Username, block, &job.DownloadJob)
+			cache.addScheduledJob(sj)
 		}
 	}
 

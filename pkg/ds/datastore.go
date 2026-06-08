@@ -43,11 +43,11 @@ import (
 //=============================================================================
 
 var DefaultFrom = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
-var DefaultTo = time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC)
+var DefaultTo   = time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC)
 
 //=============================================================================
 
-var pool *pgxpool.Pool
+var pool    *pgxpool.Pool
 var staging string
 
 type Formatter func(dp *DataPoint) any
@@ -64,7 +64,7 @@ func InitDatastore(cfg *app.Datastore) {
 		core.ExitWithMessage("Failed to connect to the datastore: " + err.Error())
 	}
 
-	pool = p
+	pool    = p
 	staging = cfg.Staging
 }
 
@@ -238,6 +238,20 @@ func SaveAggregate(da DataAggregator, config *DataConfig) error {
 }
 
 //=============================================================================
+
+func DeleteAggregates(config *DataConfig) error {
+	for _, tf := range []string{"1m", "5m", "15m", "60m", "1440m"} {
+		query := buildDeleteQuery(tf, config)
+		_, err := pool.Exec(context.Background(), query, config.Symbol, config.Selector)
+		if err != nil {
+			return req.NewServerErrorByError(err)
+		}
+	}
+
+	return nil
+}
+
+//=============================================================================
 //===
 //=== Private methods
 //===
@@ -288,6 +302,20 @@ func buildAddQuery(timeframe string, config *DataConfig) string {
 		"open_interest=excluded.open_interest"
 
 	return query
+}
+
+//=============================================================================
+
+func buildDeleteQuery(timeframe string, config *DataConfig) string {
+	table := "system_data_"
+	field := "system_code"
+
+	if config.UserTable {
+		table = "user_data_"
+		field = "product_id"
+	}
+
+	return "DELETE FROM " + table + timeframe + " WHERE symbol = $1 AND " + field + " = $2"
 }
 
 //=============================================================================

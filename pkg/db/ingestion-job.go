@@ -43,7 +43,7 @@ func UpdateIngestionJob(tx *gorm.DB, job *IngestionJob) error {
 
 //=============================================================================
 
-func DeleteAllIngestionJobsByDataInstrumentId(tx *gorm.DB, id uint) error {
+func DeleteIngestionJobsByDataInstrumentId(tx *gorm.DB, id uint) error {
 	err := tx.Delete(&IngestionJob{}, "data_instrument_id", id).Error
 	return req.NewServerErrorByError(err)
 }

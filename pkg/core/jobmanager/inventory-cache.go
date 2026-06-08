@@ -114,6 +114,20 @@ func (ic *InventoryCache) schedule(maxJobs int, e Executor) {
 }
 
 //=============================================================================
+
+func (ic *InventoryCache) cancelUserJobsOnProduct(username, systemCode, root string) bool {
+	ic.Lock()
+	ac, found := ic.adapters[systemCode]
+	ic.Unlock()
+
+	if found {
+		return ac.cancelUserJobsOnProduct(username, root)
+	}
+
+	return false
+}
+
+//=============================================================================
 //===
 //=== Private methods
 //===

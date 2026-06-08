@@ -98,3 +98,9 @@ func UpdateDataBlock(tx *gorm.DB, db *DataBlock) error {
 }
 
 //=============================================================================
+
+func DeleteDataBlock(tx *gorm.DB, id uint) error {
+	return tx.Delete(&DataBlock{}, id).Error
+}
+
+//=============================================================================

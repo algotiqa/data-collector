@@ -182,13 +182,44 @@ func (ac *AdapterCache) freeConnection(uc *UserConnection, enqueue bool) {
 
 	ac.runningJobs = removeElem(ac.runningJobs, uc.scheduledJob)
 
-	if enqueue {
+	if enqueue && !uc.scheduledJob.IsCancelled() {
 		ac.waitingJobs = append(ac.waitingJobs, uc.scheduledJob)
 	}
 
 	uc.deallocate()
 }
 
+//=============================================================================
+
+func (ac *AdapterCache) cancelUserJobsOnProduct(username, root string) bool {
+	ac.Lock()
+	defer ac.Unlock()
+
+	i := 0
+	for _, wj := range ac.waitingJobs {
+		if !(wj.username == username && wj.block.Root == root) {
+			ac.waitingJobs[i] = wj
+			i++
+		}
+	}
+
+	ac.waitingJobs = ac.waitingJobs[:i]
+	found := false
+
+	for _, rj := range ac.runningJobs {
+		if rj.username == username && rj.block.Root == root {
+			rj.Cancel()
+			found = true
+		}
+	}
+
+	return found
+}
+
+//=============================================================================
+//===
+//=== Private methods
+//===
 //=============================================================================
 
 func (ac *AdapterCache) getJobToRun() (int, *ScheduledJob) {

@@ -109,8 +109,8 @@ func run() {
 func getDataProductsToWork() (*[]db.DataProduct, error) {
 	filter := map[string]any{}
 	filter["supports_multiple_data"] = false
-	filter["connected"] = true
-	filter["status"] = db.DPStatusFetchingInventory
+	filter["connected"]              = true
+	filter["status"]                 = db.DPStatusFetchingInventory
 
 	var list *[]db.DataProduct
 
@@ -275,7 +275,7 @@ func addDownloadJob(tx *gorm.DB, block *db.DataBlock, di *db.DataInstrument, dp 
 		return nil, err
 	}
 
-	return jobmanager.NewScheduledJob(block, job), nil
+	return jobmanager.NewScheduledJob(dp.Username, block, job), nil
 }
 
 //=============================================================================

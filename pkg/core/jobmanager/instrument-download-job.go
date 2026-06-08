@@ -85,6 +85,11 @@ func (i *InstrumentDownLoadJob) execute(jc *JobContext) error {
 
 			time.Sleep(time.Millisecond * 500)
 		}
+
+		if sj.IsCancelled() {
+			slog.Info("DownloadJob: Job cancelled", "systemCode", blk.SystemCode, "root", blk.Root, "symbol", blk.Symbol, "jobId", job.Id)
+			return nil
+		}
 	}
 
 	err = recalcDailyBars(blk, session, prodLoc)

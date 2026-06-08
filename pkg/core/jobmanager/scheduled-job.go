@@ -25,6 +25,7 @@ THE SOFTWARE.
 package jobmanager
 
 import (
+	"sync"
 	"time"
 
 	"github.com/algotiqa/data-collector/pkg/db"
@@ -40,9 +41,12 @@ const (
 //=============================================================================
 
 type ScheduledJob struct {
+	sync.RWMutex
+	username  string
 	block     *db.DataBlock
 	job       *db.DownloadJob
 	lastError *time.Time
+	cancelled bool
 }
 
 //=============================================================================
@@ -54,6 +58,24 @@ func (sj *ScheduledJob) IsSchedulable() bool {
 	}
 
 	return sj.job.LoadFrom < types.Today(time.UTC)
+}
+
+//=============================================================================
+
+func (sj *ScheduledJob) Cancel() {
+	sj.Lock()
+	defer sj.Unlock()
+
+	sj.cancelled = true
+}
+
+//=============================================================================
+
+func (sj *ScheduledJob) IsCancelled() bool {
+	sj.RLock()
+	defer sj.RUnlock()
+
+	return sj.cancelled
 }
 
 //=============================================================================

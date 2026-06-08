@@ -34,6 +34,23 @@ import (
 
 //=============================================================================
 
+func GetDataInstrumentsByProductId(tx *gorm.DB, id uint) (*[]DataInstrument, error) {
+	var list []DataInstrument
+
+	filter := map[string]any{}
+	filter["data_product_id"] = id
+
+	res := tx.Where(filter).Find(&list)
+
+	if res.Error != nil {
+		return nil, req.NewServerErrorByError(res.Error)
+	}
+
+	return &list, nil
+}
+
+//=============================================================================
+
 func GetDataInstrumentsByProductIdFull(tx *gorm.DB, pId uint, stored bool) (*[]DataInstrumentExt, error) {
 	var list []DataInstrumentExt
 
@@ -239,6 +256,12 @@ func AddDataInstrument(tx *gorm.DB, i *DataInstrument) error {
 
 func UpdateDataInstrument(tx *gorm.DB, i *DataInstrument) error {
 	return tx.Save(i).Error
+}
+
+//=============================================================================
+
+func DeleteDataInstrument(tx *gorm.DB, id uint) error {
+	return tx.Delete(&DataInstrument{}, id).Error
 }
 
 //=============================================================================

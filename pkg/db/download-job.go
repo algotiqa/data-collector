@@ -31,10 +31,12 @@ import (
 
 //=============================================================================
 
-func GetDownloadJobs(tx *gorm.DB) (*[]DownloadJob, error) {
-	var list []DownloadJob
-
-	res := tx.Find(&list)
+func GetDownloadJobs(tx *gorm.DB) (*[]DownloadJobFull, error) {
+	var list []DownloadJobFull
+	res := tx.Model(&DownloadJob{}).Select("download_job.*, username").
+		Joins("LEFT JOIN data_instrument ON download_job.data_instrument_id = data_instrument.id").
+		Joins("LEFT JOIN data_product    ON data_instrument.data_product_id = data_product.id").
+		Find(&list)
 
 	if res.Error != nil {
 		return nil, req.NewServerErrorByError(res.Error)
@@ -59,6 +61,13 @@ func UpdateDownloadJob(tx *gorm.DB, job *DownloadJob) error {
 
 func DeleteDownloadJob(tx *gorm.DB, id uint) error {
 	return tx.Delete(&DownloadJob{}, id).Error
+}
+
+//=============================================================================
+
+func DeleteDownloadJobsByDataInstrumentId(tx *gorm.DB, id uint) error {
+	err := tx.Delete(&DownloadJob{}, "data_instrument_id", id).Error
+	return req.NewServerErrorByError(err)
 }
 
 //=============================================================================

@@ -119,7 +119,7 @@ func reloadDataInstrumentData(c *auth.Context) {
 		})
 
 		if err == nil {
-			sj := jobmanager.NewScheduledJob(blk, job)
+			sj := jobmanager.NewScheduledJob(c.Session.Username, blk, job)
 			jobmanager.AddScheduledJob(sj)
 		}
 	}

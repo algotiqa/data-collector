@@ -48,6 +48,12 @@ func Upload(job *db.IngestionJob) bool {
 
 	block, err := setDataBlockInLoading(job)
 	if err == nil {
+		if block == nil {
+			slog.Warn("HandleFileUpload: Cannot find data block. Maybe the data product has been deleted", "filename", job.Filename, "dbId", job.DataBlockId)
+			_ = ds.DeleteDataFile(job.Filename)
+			return true
+		}
+
 		context, err = ingestDatafile(job, block)
 		if err == nil {
 			err = setDataBlockInProcessing(job, block, context.DataRange)
@@ -83,10 +89,15 @@ func setDataBlockInLoading(job *db.IngestionJob) (*db.DataBlock, error) {
 		if err != nil {
 			return err
 		}
-		b.Status = db.DBStatusLoading
-		b.Progress = 0
 
-		return db.UpdateDataBlock(tx, b)
+		if b != nil {
+			b.Status   = db.DBStatusLoading
+			b.Progress = 0
+
+			err = db.UpdateDataBlock(tx, b)
+		}
+
+		return err
 	})
 
 	return b, err

@@ -82,47 +82,10 @@ func recalcForProduct(id uint) bool {
 
 	dp, instruments, err := getIntrumentSet(id)
 	if err == nil {
-		var updated []*db.DataInstrumentExt
-		var curr, next *db.DataInstrumentExt
-
-		for i := 0; i < len(*instruments)-1; i++ {
-			curr = &(*instruments)[i]
-			next = &(*instruments)[i+1]
-
-			var toUpdate bool
-
-			//--- Check if we have to calculate the rollover
-
-			shouldRecalc := curr.RolloverDate == nil ||
-				curr.RolloverStatus == db.DIRollStatusNoData ||
-				curr.RolloverStatus == db.DIRollStatusNoMatch
-
-			if shouldRecalc {
-				if *curr.Status == db.DBStatusReady {
-					//--- First block loaded. Check the second one
-
-					if *next.Status == db.DBStatusReady || *next.Status == db.DBStatusSleeping {
-						toUpdate, err = calcRollover(dp, curr, next, dp.RolloverTrigger)
-						if err != nil {
-							break
-						}
-					} else if *next.Status == db.DBStatusEmpty {
-						toUpdate = setFakeRolloverDate(curr, dp)
-					}
-				} else if *curr.Status == db.DBStatusEmpty {
-					toUpdate = setFakeRolloverDate(curr, dp)
-				}
-
-				if toUpdate {
-					updated = append(updated, curr)
-				}
-			}
-		}
-
-		err = updateRolledInstruments(updated)
-
-		if err == nil {
-			err = recalcVirtualInstrumentStatus(dp, instruments)
+		if dp == nil {
+			slog.Info("recalcForProduct: Data product not found (maybe it has been deleted)", "dpId", id)
+		} else {
+			err = rolloverRecalc(dp, instruments)
 		}
 	}
 
@@ -138,16 +101,14 @@ func recalcForProduct(id uint) bool {
 //=============================================================================
 
 func getIntrumentSet(dpId uint) (*db.DataProduct, *[]db.DataInstrumentExt, error) {
-	var dp *db.DataProduct
+	var dp   *db.DataProduct
 	var list *[]db.DataInstrumentExt
 
 	err2 := dbms.RunInTransaction(func(tx *gorm.DB) error {
 		var err error
 		dp, err = db.GetDataProductById(tx, dpId)
 		if err == nil {
-			if dp == nil {
-				err = errors.New("No data product found : " + strconv.Itoa(int(dpId)))
-			} else {
+			if dp != nil {
 				list, err = db.GetRollingDataInstrumentsByProductId(tx, dpId, dp.Months)
 			}
 		}
@@ -159,6 +120,56 @@ func getIntrumentSet(dpId uint) (*db.DataProduct, *[]db.DataInstrumentExt, error
 	}
 
 	return dp, list, nil
+}
+
+//=============================================================================
+
+func rolloverRecalc(dp *db.DataProduct, instruments *[]db.DataInstrumentExt) error {
+	var err error
+	var updated []*db.DataInstrumentExt
+	var curr, next *db.DataInstrumentExt
+
+	for i := 0; i < len(*instruments)-1; i++ {
+		curr = &(*instruments)[i]
+		next = &(*instruments)[i+1]
+
+		var toUpdate bool
+
+		//--- Check if we have to calculate the rollover
+
+		shouldRecalc := curr.RolloverDate == nil ||
+			curr.RolloverStatus == db.DIRollStatusNoData ||
+			curr.RolloverStatus == db.DIRollStatusNoMatch
+
+		if shouldRecalc {
+			if *curr.Status == db.DBStatusReady {
+				//--- First block loaded. Check the second one
+
+				if *next.Status == db.DBStatusReady || *next.Status == db.DBStatusSleeping {
+					toUpdate, err = calcRollover(dp, curr, next, dp.RolloverTrigger)
+					if err != nil {
+						return err
+					}
+				} else if *next.Status == db.DBStatusEmpty {
+					toUpdate = setFakeRolloverDate(curr, dp)
+				}
+			} else if *curr.Status == db.DBStatusEmpty {
+				toUpdate = setFakeRolloverDate(curr, dp)
+			}
+
+			if toUpdate {
+				updated = append(updated, curr)
+			}
+		}
+	}
+
+	err = updateRolledInstruments(updated)
+
+	if err == nil {
+		err = recalcVirtualInstrumentStatus(dp, instruments)
+	}
+
+	return err
 }
 
 //=============================================================================
@@ -208,11 +219,11 @@ func calcRolloverDelta(dp *db.DataProduct, curr, next *db.DataInstrumentExt, sta
 		}
 	}
 
-	slog.Error("calcRolloverDelta: Cannot find any rollover delta", "dpId", dp.Id, "currId", curr.Id, "nextId", next.Id, "startRollDate", startRollDate)
+	slog.Warn("calcRolloverDelta: Cannot find any rollover delta. Using the same price between contracts", "dpId", dp.Id, "currId", curr.Id, "nextId", next.Id, "startRollDate", startRollDate)
 
 	curr.RolloverStatus = db.DIRollStatusNoMatch
-	curr.RolloverDelta = 0
-	curr.RolloverDate = &startRollDate
+	curr.RolloverDelta  = 0
+	curr.RolloverDate   = &startRollDate
 
 	return nil
 }
