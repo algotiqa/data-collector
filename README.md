@@ -1,6 +1,6 @@
 # Data Collector
 
-Standalone server that store time series. Uses InfluxDB as a backend storage system
+Standalone server that store time series. Uses TimescaleDB as a backend storage system
 
 ## License
 
