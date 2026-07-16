@@ -100,8 +100,8 @@ type BrokerProduct struct {
 	Username         string  `json:"username"`
 	Symbol           string  `json:"symbol"`
 	Name             string  `json:"name"`
-	PointValue       float32 `json:"pointValue"`
-	CostPerOperation float32 `json:"costPerOperation"`
+	PointValue       float64 `json:"pointValue"`
+	CostPerOperation float64 `json:"costPerOperation"`
 }
 
 //=============================================================================
