@@ -3,28 +3,28 @@ application:
   production : false
   debug      : false
 database:
-  address : localhost:3402
+  address : algotiqa-server:3402
   name    : collector
   username: admin
   password: admin
 authentication:
   authority   : https://algotiqa-server:8443/auth/realms/algotiqa
   clientId    : algotiqa-backend
-  clientSecret: ddKGvsqWMKQT4v4lWS03Jr9i3ZEJHzv1
+  clientSecret: PUT_YOUR_KEY_HERE
 platform:
   system: https://algotiqa-server:8449/api/system
 messaging:
-  address : localhost:8450
+  address : algotiqa-server:8450
   username: admin
   password: admin
   journal:
-    directory      : .
+    directory      : journal
     queueSize      : 1000
     compactMessages: 1000
     dbSpoolInterval: 2
 datastore:
-  address : localhost:3410
+  address : algotiqa-server:3410
   name    : datastore
   username: admin
   password: admin
-  staging :  staging
+  staging : staging
