@@ -1,6 +1,8 @@
 # Data Collector
 
-Standalone server that store time series. Uses TimescaleDB as a backend storage system
+Standalone server that store time series. Uses TimescaleDB as a backend storage system.
+
+**Note:** the main documentation of the platform is located [HERE](https://github.com/algotiqa/docs).
 
 ## License
 
