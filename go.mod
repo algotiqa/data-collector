@@ -3,7 +3,7 @@ module github.com/algotiqa/data-collector
 go 1.25.8
 
 require (
-	github.com/algotiqa/core v1.22.3
+	github.com/algotiqa/core v1.24.0
 	github.com/algotiqa/types v0.0.8
 	github.com/gin-gonic/gin v1.12.0
 	gorm.io/gorm v1.31.2
@@ -46,7 +46,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/quic-go/quic-go v0.59.0 // indirect
-	github.com/rabbitmq/amqp091-go v1.14.0 // indirect
+	github.com/rabbitmq/amqp091-go v1.15.0 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/samber/slog-gin v1.21.1 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
