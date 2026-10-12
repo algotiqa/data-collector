@@ -140,8 +140,9 @@ func parseBackDays(value string) (int, error) {
 		return 0, err
 	}
 
-	if days < 0 || days > 10000 {
-		return 0, errors.New("allowed range is [0..10000]")
+	//--- 100 years back
+	if days < 0 || days > 36500 {
+		return 0, errors.New("allowed range is [0..36500]")
 	}
 
 	return days, nil

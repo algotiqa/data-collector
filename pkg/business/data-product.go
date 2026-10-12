@@ -140,7 +140,7 @@ func getDataProductAndCheckAccess(tx *gorm.DB, c *auth.Context, id uint, functio
 	}
 
 	if !c.Session.IsAdmin() {
-		if p.Username != c.Session.Username {
+		if p.Username != c.Session.OnBehalfOf {
 			c.Log.Error(function+": Data product not owned by user", "id", id)
 			return nil, req.NewForbiddenError("Data product is not owned by user: %v", id)
 		}

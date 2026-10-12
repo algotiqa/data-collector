@@ -7,7 +7,6 @@
 //=== By using this file, you agree to the terms and conditions of that license.
 //=============================================================================
 
-
 package rollover
 
 import (
@@ -340,7 +339,7 @@ func recalcVirtualInstrumentStatus(dp *db.DataProduct, instruments *[]db.DataIns
 func sendEventToUser(tx *gorm.DB, dp *db.DataProduct, instruments *[]db.DataInstrumentExt, empty, noMatch *db.DataInstrumentExt, vi *db.DataInstrument) error {
 	if empty == nil && noMatch == nil {
 		vi.RolloverStatus = db.DIRollStatusReady
-		return msg.SendEventByCode(dp.Username, "dc.dataProduct.ready", map[string]interface{}{
+		return msg.SendEventByCode(dp.Username, "dc.dataProduct.ready", map[string]any{
 			"root":        dp.Symbol,
 			"virtual":     vi.Symbol,
 			"instruments": len(*instruments),
@@ -349,7 +348,7 @@ func sendEventToUser(tx *gorm.DB, dp *db.DataProduct, instruments *[]db.DataInst
 
 	if empty != nil {
 		vi.RolloverStatus = db.DIRollStatusNoData
-		return msg.SendEventByCode(dp.Username, "dc.dataProduct.readyEmpty", map[string]interface{}{
+		return msg.SendEventByCode(dp.Username, "dc.dataProduct.readyEmpty", map[string]any{
 			"root":    dp.Symbol,
 			"symbol":  empty.Symbol,
 			"virtual": vi.Symbol,
@@ -357,7 +356,7 @@ func sendEventToUser(tx *gorm.DB, dp *db.DataProduct, instruments *[]db.DataInst
 	}
 
 	vi.RolloverStatus = db.DIRollStatusNoMatch
-	return msg.SendEventByCode(dp.Username, "dc.dataProduct.readyNoMatch", map[string]interface{}{
+	return msg.SendEventByCode(dp.Username, "dc.dataProduct.readyNoMatch", map[string]any{
 		"root":    dp.Symbol,
 		"symbol":  noMatch.Symbol,
 		"system":  dp.SystemCode,
